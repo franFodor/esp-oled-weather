@@ -1,55 +1,23 @@
-# Prerequisites
-*.d
+**/build/
+.*/
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+.DS_Store
 
-# Linker output
-*.ilk
-*.map
-*.exp
+.pytest_cache/
+__pycache__/
 
-# Precompiled Headers
-*.gch
-*.pch
+# esp-idf built binaries
+build/
+build_*_*/
+managed_components
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
+# idf-ci build run output
+build_summary_*.xml
+app_info_*.txt
+size_info_*.txt
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+# pytest-embedded log folder
+pytest_embedded_log/
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
-
-# debug information files
-*.dwo
+# idf-component-manager output
+dependencies.lock
