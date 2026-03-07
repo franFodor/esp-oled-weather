@@ -6,6 +6,10 @@
 .pytest_cache/
 __pycache__/
 
+# ESP-IDF configuration
+sdkconfig
+sdkconfig.old
+
 # esp-idf built binaries
 build/
 build_*_*/
