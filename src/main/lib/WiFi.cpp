@@ -6,6 +6,7 @@
  */
 
 #include "../include/WiFi.h"
+#include "../include/Http.h"
 #include "esp_err.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
@@ -55,14 +56,18 @@ void WiFi::init() {
 }
 
 /**
- * @brief Handle WiFi event such as starting, disconnecting, getting ip...
+ * @brief Handle WiFi events such as starting, disconnecting, getting ip...
  *
- * Called automatically after registering handlers.
+ * Called automatically after registering handlers, function signature in accordance with ESP-IDF documentation.
  *
- * @param arg 
- * @param event_base
- * @param event_id
- * @param event_data
+ * @param void* arg
+ *        pointer to a user defined argument
+ * @param esp_event_base_t event_base
+ *        base of the event (WiFi event, IP event...)
+ * @param int32_t event_id
+*         identifier of the event
+ * @param void* event_data
+ *        pointer to event specific data
  */
 void WiFi::eventHandler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
@@ -70,10 +75,12 @@ void WiFi::eventHandler(void* arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        // TODO alert the user and try to reconnect
+        // TODO alert the user and try to reconnect, stop the pinging task
         esp_wifi_connect();
         ESP_LOGI(TAG, "Failed connect to the AP, retrying...");
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        // start_http_client();
+        // TODO start a task to ping every hour
+        Http Htpp;
+        Htpp.getWeather();
     }
 }
