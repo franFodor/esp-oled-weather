@@ -5,14 +5,14 @@
  *     Author: Fran Fodor
  */
 
-#include "../include/WiFi.h"
-#include "../include/Http.h"
 #include "esp_err.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "sdkconfig.h"
-#include <cstring>
+
+#include "../include/WiFi.h"
+#include "../include/Http.h"
 
 static const char *TAG = "ESP_WIFI";
  
@@ -79,8 +79,13 @@ void WiFi::eventHandler(void* arg, esp_event_base_t event_base,
         esp_wifi_connect();
         ESP_LOGI(TAG, "Failed connect to the AP, retrying...");
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        // TODO start a task to ping every hour
+        // TODO start a task to ping every minute
         Http Htpp;
-        Htpp.getWeather();
+        WeatherData weatherData;
+        weatherData = Htpp.getWeather();
+
+        ESP_LOGI(TAG, "Temperature: %.2f C", weatherData.temperature);
+        ESP_LOGI(TAG, "Humidity: %.0f %%", weatherData.humidity);
+        ESP_LOGI(TAG, "Wind: %.2f km/h", weatherData.wind);
     }
 }

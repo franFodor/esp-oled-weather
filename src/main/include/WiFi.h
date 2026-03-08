@@ -10,6 +10,8 @@
 
 #include "esp_event.h"
 
+// TODO maybe need to sync time
+
 class WiFi
 {
 public:
