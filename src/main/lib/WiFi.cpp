@@ -17,7 +17,7 @@
 static const char *TAG = "ESP_WIFI";
  
 /**
- * @brief Initialize WiFi.
+ * @brief Initialize WiFi in STA mode with credentials from menuconfig.
  *
  */
 void WiFi::init() {
@@ -30,18 +30,8 @@ void WiFi::init() {
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-  esp_event_handler_instance_t instance_any_id;
-  esp_event_handler_instance_t instance_got_ip;
-  ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-                                                      ESP_EVENT_ANY_ID,
-                                                      &eventHandler,
-                                                      NULL,
-                                                      &instance_any_id));
-  ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
-                                                      IP_EVENT_STA_GOT_IP,
-                                                      &eventHandler,
-                                                      NULL,
-                                                      &instance_got_ip));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifiEventHandler, NULL, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &ipEventHandler, NULL, NULL));
 
   wifi_config_t wifi_config = {};
   // set parameters from menuconfig
@@ -56,9 +46,39 @@ void WiFi::init() {
 }
 
 /**
- * @brief Handle WiFi events such as starting, disconnecting, getting ip...
+ * @brief Handle IP events.
  *
- * Called automatically after registering handlers, function signature in accordance with ESP-IDF documentation.
+ * Called automatically after registering handlers upon event, function signature in accordance with ESP-IDF documentation.
+ *
+ * @param void* arg
+ *        pointer to a user defined argument
+ * @param esp_event_base_t event_base
+ *        base of the event (WiFi event, IP event...)
+ * @param int32_t event_id
+ *        identifier of the event
+ * @param void* event_data
+ *        pointer to event specific data
+ */
+void WiFi::ipEventHandler(void* arg, esp_event_base_t event_base,
+                                int32_t event_id, void* event_data)
+{
+    if (event_id == IP_EVENT_STA_GOT_IP) {
+        // TODO start a task to ping every minute
+        Http Htpp;
+        WeatherData weatherData;
+        weatherData = Htpp.getWeather();
+
+        ESP_LOGI(TAG, "Temperature: %.2f C", weatherData.temperature);
+        ESP_LOGI(TAG, "Humidity: %.0f %%", weatherData.humidity);
+        ESP_LOGI(TAG, "Wind: %.2f km/h", weatherData.wind);
+        ESP_LOGI(TAG, "Weather code: %d", weatherData.weatherCode);
+    }
+}
+
+/**
+ * @brief Handle WiFi events such as starting, disconnecting.
+ *
+ * Called automatically after registering handlers upon event, function signature in accordance with ESP-IDF documentation.
  *
  * @param void* arg
  *        pointer to a user defined argument
@@ -69,23 +89,14 @@ void WiFi::init() {
  * @param void* event_data
  *        pointer to event specific data
  */
-void WiFi::eventHandler(void* arg, esp_event_base_t event_base,
+void WiFi::wifiEventHandler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+    if (event_id == WIFI_EVENT_STA_START) {
+        ESP_ERROR_CHECK(esp_wifi_connect());
+    } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
         // TODO alert the user and try to reconnect, stop the pinging task
-        esp_wifi_connect();
+        ESP_ERROR_CHECK(esp_wifi_connect());
         ESP_LOGI(TAG, "Failed connect to the AP, retrying...");
-    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        // TODO start a task to ping every minute
-        Http Htpp;
-        WeatherData weatherData;
-        weatherData = Htpp.getWeather();
-
-        ESP_LOGI(TAG, "Temperature: %.2f C", weatherData.temperature);
-        ESP_LOGI(TAG, "Humidity: %.0f %%", weatherData.humidity);
-        ESP_LOGI(TAG, "Wind: %.2f km/h", weatherData.wind);
     }
 }

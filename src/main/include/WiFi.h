@@ -17,8 +17,10 @@ class WiFi
 public:
   static void    init();
 private:
-  static void    eventHandler(void* arg, esp_event_base_t event_base,
+  static void    ipEventHandler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data);
+  static void    wifiEventHandler(void* arg, esp_event_base_t event_base,
+                                  int32_t event_id, void* event_data);
 };
 
 #endif

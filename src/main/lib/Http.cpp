@@ -17,6 +17,20 @@ char Http::m_responseBuffer[BUFFER_SIZE];
 int Http::m_responseLength = 0;
 
 /**
+ * @brief   Constructor for HTTP client to set up URL and GET method.
+ *
+ */
+Http::Http()
+{
+  esp_http_client_config_t http_config = {};
+  http_config.url = WEATHER_URL;
+  http_config.method = HTTP_METHOD_GET;
+  http_config.event_handler = Http::httpEventHandler;
+
+  m_client = esp_http_client_init(&http_config);
+}
+
+/**
  * @brief   Handler for HTTP events such as "on data recieved".
  *
  * @param   esp_http_client_event_t *evt
@@ -31,6 +45,8 @@ esp_err_t Http::httpEventHandler(esp_http_client_event_t *evt)
     if (m_responseLength + evt->data_len < BUFFER_SIZE) {
       ::memcpy(m_responseBuffer + m_responseLength, evt->data ,evt->data_len);
       m_responseLength += evt->data_len;
+    } else {
+      return ESP_ERR_HTTP_RANGE_NOT_SATISFIABLE;
     }
     break;
 
@@ -85,6 +101,7 @@ void Http::parseJson(const char *json, WeatherData *weatherData)
   weatherData->temperature = Http::extractValue(json, "temperature_2m");
   weatherData->humidity = Http::extractValue(json, "relative_humidity_2m");
   weatherData->wind = Http::extractValue(json, "wind_speed_10m");
+  weatherData->weatherCode = Http::extractValue(json, "weather_code");
 
   // ESP_LOGI(TAG, "Temperature: %.2f C", weatherData.temperature);
   // ESP_LOGI(TAG, "Humidity: %.0f %%", weatherData.humidity);
@@ -102,14 +119,7 @@ WeatherData Http::getWeather()
   m_responseLength = 0;
   WeatherData weatherData;
 
-  esp_http_client_config_t http_config = {};
-  http_config.url = WEATHER_URL;
-  http_config.method = HTTP_METHOD_GET;
-  http_config.event_handler = Http::httpEventHandler;
-
-  esp_http_client_handle_t client = esp_http_client_init(&http_config);
-
-  esp_err_t err = esp_http_client_perform(client);
+  esp_err_t err = esp_http_client_perform(m_client);
 
   if (err == ESP_OK) {
     m_responseBuffer[m_responseLength] = 0;
@@ -121,6 +131,5 @@ WeatherData Http::getWeather()
     ESP_LOGE(TAG, "Request failed: %s", esp_err_to_name(err));
   }
 
-  esp_http_client_cleanup(client);
   return weatherData;
 }
