@@ -15,12 +15,12 @@
 #include "../include/Http.h"
 
 static const char *TAG = "ESP_WIFI";
- 
+
 /**
  * @brief Initialize WiFi in STA mode with credentials from menuconfig.
  *
  */
-void WiFi::init() {
+WiFi::WiFi() {
   ESP_ERROR_CHECK(nvs_flash_init());
   ESP_ERROR_CHECK(esp_netif_init());
   ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -33,6 +33,11 @@ void WiFi::init() {
   ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifiEventHandler, NULL, NULL));
   ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &ipEventHandler, NULL, NULL));
 
+  if (strlen(CONFIG_WIFI_SSID) == 0) {
+    ESP_LOGE(TAG, "WiFi SSID not set. Run menuconfig.");
+    return;
+  }
+  
   wifi_config_t wifi_config = {};
   // set parameters from menuconfig
   ::memcpy(wifi_config.sta.ssid, CONFIG_WIFI_SSID, sizeof(CONFIG_WIFI_SSID));
@@ -48,7 +53,8 @@ void WiFi::init() {
 /**
  * @brief Handle IP events.
  *
- * Called automatically after registering handlers upon event, function signature in accordance with ESP-IDF documentation.
+ * Called automatically after registering handlers upon event, function prototype in
+ * accordance with ESP-IDF documentation.
  *
  * @param void* arg
  *        pointer to a user defined argument
@@ -78,7 +84,8 @@ void WiFi::ipEventHandler(void* arg, esp_event_base_t event_base,
 /**
  * @brief Handle WiFi events such as starting, disconnecting.
  *
- * Called automatically after registering handlers upon event, function signature in accordance with ESP-IDF documentation.
+ * Called automatically after registering handlers upon event, function prototype in
+ * accordance with ESP-IDF documentation.
  *
  * @param void* arg
  *        pointer to a user defined argument
