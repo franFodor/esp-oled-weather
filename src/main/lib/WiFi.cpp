@@ -92,7 +92,7 @@ void WiFi::ipEventHandler(void* arg, esp_event_base_t event_base,
  * @param esp_event_base_t event_base
  *        base of the event (WiFi event, IP event...)
  * @param int32_t event_id
-*         identifier of the event
+ *        identifier of the event
  * @param void* event_data
  *        pointer to event specific data
  */

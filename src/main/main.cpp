@@ -8,7 +8,7 @@
 #include "esp_log.h"
 
 #include "include/WiFi.h"
-#include "include/I2C.h"
+#include "include/SSD1306.h"
 
 static const char *TAG = "ESP32-WEATHER";
 
@@ -18,6 +18,9 @@ extern "C" void app_main()
 
   // WiFi WiFi;
 
-  I2C I2C;
-  I2C.testDisplay();
+  SSD1306 display;
+
+  display.drawString("CLOUD", 0);
+  display.drawString("ESP32", 4);
+  display.drawString("TESTING", 1);
 }

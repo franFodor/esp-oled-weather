@@ -19,9 +19,10 @@ class I2C
 public:
   I2C();
   void                    testDisplay();
+  i2c_master_dev_handle_t m_devHandle;
+
 private:
   i2c_master_bus_handle_t m_busHandle;
-  i2c_master_dev_handle_t m_devHandle;
 };
 
 #endif
