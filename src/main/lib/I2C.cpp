@@ -1,3 +1,4 @@
+
 /**
  * I2C.cpp
  *
@@ -5,53 +6,146 @@
  *     Author: Fran Fodor
  */
 
-#include "driver/i2c_master.h"
-#include "esp_err.h"
-#include "esp_log.h"
-#include "../include/I2C.h"
-#include "freertos/FreeRTOS.h"
-
-static const char* TAG = "ESP_I2C";
+#include "I2C.h"
+#include "driver/gpio.h"
+#include "rom/ets_sys.h"
 
 /**
- * @brief Initialize I2C bus in master mode for QWIIC port.
+ * Helper macros for I2C communication.
+ */
+#define SET_HIGH(pin)  gpio_set_level(pin, 1);
+#define SET_LOW(pin)   gpio_set_level(pin, 0);
+#define DELAY(us)      ets_delay_us(us);
+
+#define WAIT_LOW(pin)  while (gpio_get_level(pin)) continue;
+#define WAIT_HIGH(pin) while (!gpio_get_level(pin)) continue;
+
+/**
+ * @brief   Constructor for I2C which sets up I2C pins.
  *
  */
-I2C::I2C()
-{
-  i2c_master_bus_config_t bus_config = {};
-  bus_config.i2c_port = I2C_NUM_0;
-  bus_config.sda_io_num = I2C_SDA;
-  bus_config.scl_io_num = I2C_SCL;
-  bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
-  bus_config.glitch_ignore_cnt = 7;
-  bus_config.flags.enable_internal_pullup = true;
+I2C::I2C() {
+  m_sda = I2C_SDA;
+  m_scl = I2C_SCL;
+  m_addr = SSD_ADDR;
 
-  ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &m_busHandle));
+  gpio_config_t io_conf = {};
+  io_conf.mode = GPIO_MODE_INPUT_OUTPUT_OD;
+  io_conf.pin_bit_mask = ((1ULL << m_sda) | (1ULL << m_scl));
+  io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+  io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
 
-  i2c_device_config_t dev_config = {};
-  dev_config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
-  dev_config.device_address = SSD_ADDR;
-  dev_config.scl_speed_hz = 100000;
+  gpio_config(&io_conf);
 
-  ESP_ERROR_CHECK(i2c_master_bus_add_device(m_busHandle, &dev_config, &m_devHandle));
-  ESP_LOGI(TAG, "I2C initilization finished!");
+  SET_HIGH(m_scl);
+  SET_HIGH(m_sda);
 }
 
 /**
- * @brief Function to test I2C by sending display ON/OFF code.
+ * @brief   Starts I2C transaction.
+ *
+ * SSD1306 datasheet pg. 21
  *
  */
-void I2C::testDisplay()
+void I2C::start()
 {
-  // turn display off
-  uint8_t cmd[2] = {0x00, 0xAE}; 
-  ESP_ERROR_CHECK(i2c_master_transmit(m_devHandle, cmd, sizeof(cmd), -1));
+  // start condition - pull SDA to LOW while SCL is HIGH
+  SET_HIGH(m_sda);
+  SET_HIGH(m_scl);
+  DELAY(3);
+  
+  SET_LOW(m_sda);
+  DELAY(3);
+  SET_LOW(m_scl);
+}
 
-  vTaskDelay(500);
+/**
+ * @brief   Stops I2C transaction.
+ *
+ * SSD1306 datasheet pg. 21
+ *
+ */
+void I2C::stop()
+{
+  // stop condition - pull SDA to HIGH while SCL is HIGH
+  SET_LOW(m_sda);
+  SET_HIGH(m_scl);
+  DELAY(3);
 
-  // turn display on
-  cmd[0] = 0x00;
-  cmd[1] = 0xAF; 
-  ESP_ERROR_CHECK(i2c_master_transmit(m_devHandle, cmd, sizeof(cmd), -1));
+  SET_HIGH(m_sda);
+  DELAY(3);
+}
+
+/**
+ * @brief   Send byte of data to I2C.
+ *
+ * SSD1306 datasheet pg. 19
+ *
+ * @param   uint8_t byte
+ *          byte of data to be sent
+ * 
+ * @returns bool
+ *          if the acknowledge signal from slave is recieved
+ * 
+ */
+bool I2C::sendByte(uint8_t byte)
+{
+  for (int i = 0; i < 8; i++)
+  {
+    if (byte & 0x80)
+    {
+      SET_HIGH(m_sda);
+    }
+    else
+    {
+      SET_LOW(m_sda);
+    }
+
+    // transmit data on clock
+    SET_HIGH(m_scl);
+    DELAY(3);
+    SET_LOW(m_scl);
+    DELAY(3);
+
+    byte <<= 1;
+  }
+
+  // ACK signal - SDA pulled down during SCL HIGH
+  SET_HIGH(m_sda);
+  SET_HIGH(m_scl);
+  DELAY(3);
+
+  bool ack = !gpio_get_level(m_sda);
+  
+  SET_LOW(m_scl);
+  DELAY(3);
+
+  return ack;
+}
+
+/**
+ * @brief   Perform I2C transaction.
+ *
+ * SSD1306 datasheet pg. 20
+ *
+ * @param   uint8_t *data
+ *          data to be sent
+ * @param   size_t len
+ *          size of data array
+ * 
+ */
+void I2C::transaction(uint8_t *data, size_t len)
+{
+  start();
+
+  if (!sendByte(m_addr << 1))
+    stop();
+  if (!sendByte(data[0]))
+    stop();
+  for(int i = 1; i < len; i++) {
+    if (!sendByte(data[i]))
+      stop();
+  }
+
+  stop();
 }

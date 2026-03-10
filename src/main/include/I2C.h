@@ -8,7 +8,9 @@
 #ifndef I2C_H_
 #define I2C_H_
 
-#include "driver/i2c_master.h"
+#include "soc/gpio_num.h"
+#include <cstddef>
+#include <stdint.h>
 
 #define I2C_SDA GPIO_NUM_6
 #define I2C_SCL GPIO_NUM_7
@@ -18,11 +20,16 @@ class I2C
 {
 public:
   I2C();
-  void                    testDisplay();
-  i2c_master_dev_handle_t m_devHandle;
+  void       transaction(uint8_t *data, size_t len);
 
 private:
-  i2c_master_bus_handle_t m_busHandle;
+  void       start();
+  void       stop();
+  bool       sendByte(uint8_t byte);
+
+  gpio_num_t m_sda;
+  gpio_num_t m_scl;
+  uint8_t    m_addr;
 };
 
 #endif

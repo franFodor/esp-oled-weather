@@ -7,7 +7,8 @@
 
 #include <stdint.h>
 
-static const uint8_t font5x7[91][5] = {
+// https://www.eevblog.com/forum/projects/5x7-or-7x9-dot-matrix-font-files-in-cc/
+static const uint8_t font5x7[59][5] = {
 {0x00,0x00,0x00,0x00,0x00}, // 32 space
 {0x00,0x00,0x5F,0x00,0x00}, // !
 {0x00,0x07,0x00,0x07,0x00}, // "

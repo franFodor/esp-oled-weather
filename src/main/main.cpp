@@ -20,7 +20,6 @@ extern "C" void app_main()
 
   SSD1306 display;
 
-  display.drawString("CLOUD", 0);
-  display.drawString("ESP32", 4);
-  display.drawString("TESTING", 1);
+  display.drawString("TESTING", 0);
+  display.drawString("ESP32", 1);
 }
