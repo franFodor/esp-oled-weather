@@ -16,6 +16,7 @@ class WiFi
 public:
   WiFi();
   WeatherData    getWeatherData();
+  static bool    connect();
   static bool    m_gotIp;
   static bool    m_timeSet;
 

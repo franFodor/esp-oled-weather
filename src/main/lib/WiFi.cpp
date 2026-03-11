@@ -55,6 +55,15 @@ WiFi::WiFi()
 }
 
 /**
+ * @brief Wrapper for esp_wifi_connect function.
+ *
+ */
+bool WiFi::connect()
+{
+  return esp_wifi_connect();
+}
+
+/**
  * @brief Handle IP events.
  *
  * Called automatically after registering handlers upon event, function prototype in
@@ -76,11 +85,12 @@ void WiFi::ipEventHandler(void* arg, esp_event_base_t event_base,
   {
     m_gotIp = true;
     ESP_LOGI(TAG, "IP acquired");
-    setCurrentTime();
+    if (!m_timeSet)
+      setCurrentTime();
   }
   if (event_id == IP_EVENT_STA_LOST_IP)
   {
-    ESP_LOGI(TAG, "ip lost");
+    ESP_LOGI(TAG, "IP lost");
   }
 }
 
@@ -104,14 +114,13 @@ void WiFi::wifiEventHandler(void* arg, esp_event_base_t event_base,
 {
   if (event_id == WIFI_EVENT_STA_START)
   {
-    ESP_ERROR_CHECK(esp_wifi_connect());
+    ESP_ERROR_CHECK(connect());
   }
   else if (event_id == WIFI_EVENT_STA_DISCONNECTED)
   {
     // TODO alert the user and try to reconnect, stop the pinging task
     m_gotIp = false;
     ESP_LOGI(TAG, "Failed connect to the AP, retrying...");
-    ESP_ERROR_CHECK(esp_wifi_connect());
   }
 }
 
@@ -141,28 +150,17 @@ void WiFi::setCurrentTime()
   esp_sntp_setservername(0, "pool.ntp.org");
   esp_sntp_init();
 
-  int retry = 0;
-  const int retry_count = 15;
-
-  while (esp_sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && retry < retry_count) {
+  while (esp_sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET) {
     ESP_LOGI(TAG, "Waiting for NTP sync...");
-    retry++;
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    vTaskDelay(pdMS_TO_TICKS(2000));
   }
 
-  if (retry < retry_count)
-  {
-    setenv("TZ", "CET-1", 1);
-    tzset();
-    time_t now;
-    struct tm timeinfo;
+  setenv("TZ", "CET-1", 1);
+  tzset();
+  time_t now;
+  struct tm timeinfo;
 
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    m_timeSet = true;
-  }
-  else
-  {
-    ESP_LOGE(TAG, "Failed to set time!");
-  }
+  time(&now);
+  localtime_r(&now, &timeinfo);
+  m_timeSet = true;
 }

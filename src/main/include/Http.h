@@ -15,10 +15,12 @@
 #define BUFFER_SIZE 1024
 
 typedef struct {
-  float temperature;
-  int   humidity;
-  float wind;
-  int   weatherCode; // for displaying icon on OLED :)
+  float     temperature;
+  int       humidity;
+  float     wind;
+  int       weatherCode; // for displaying icon on OLED :)
+  bool      valid;
+  esp_err_t err;     // if http error occured
 } WeatherData;
 
 class Http

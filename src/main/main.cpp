@@ -16,6 +16,9 @@
 
 static const char *TAG = "ESP32-WEATHER";
 
+// TODO printing function that prints either to OLED if available otherwise to serial monitor
+// TODO watchdog task to check if WiFi or OLED disconnected 
+
 void displayTask(void *pvParameters)
 {
   WiFi wifi;
@@ -42,11 +45,13 @@ void displayTask(void *pvParameters)
 
   while (1)
   {
-    display.clear();
     // check if wifi is still available
     while (!wifi.m_gotIp)
     {
+      display.clear();
       display.drawString("WIFI RECONNECTING...", 2);
+      wifi.connect();
+      vTaskDelay(pdMS_TO_TICKS(100));
     }
     display.clear();
 
@@ -56,42 +61,60 @@ void displayTask(void *pvParameters)
 
     weatherData = wifi.getWeatherData();
 
-    snprintf(str, sizeof(str), "NASICE          %d:%d", timeinfo.tm_hour, timeinfo.tm_min);
-    display.drawString(str, 0);
-    memset(str, 0, sizeof(str));
-
-    snprintf(str, sizeof(str), "TEMPERATURE: %.2f C", weatherData.temperature);
-    display.drawString(str, 2);
-    memset(str, 0, sizeof(str));
-
-    snprintf(str, sizeof(str), "WIND SPEED: %.2f M/S", weatherData.wind);
-    display.drawString(str, 3);
-    memset(str, 0, sizeof(str));
-
-    snprintf(str, sizeof(str), "HUMIDITY: %d%%", weatherData.humidity);
-    display.drawString(str, 4);
-    memset(str, 0, sizeof(str));
-
-    // https://open-meteo.com/en/docs
-    if (weatherData.weatherCode == 0)
+    if (weatherData.valid)
     {
-      display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, sun);
+      snprintf(str, sizeof(str), "NASICE          %02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+      display.drawString(str, 0);
+      memset(str, 0, sizeof(str));
+
+      snprintf(str, sizeof(str), "TEMPERATURE: %.2f C", weatherData.temperature);
+      display.drawString(str, 2);
+      memset(str, 0, sizeof(str));
+
+      snprintf(str, sizeof(str), "WIND SPEED: %.2f M/S", weatherData.wind);
+      display.drawString(str, 3);
+      memset(str, 0, sizeof(str));
+
+      snprintf(str, sizeof(str), "HUMIDITY: %d%%", weatherData.humidity);
+      display.drawString(str, 4);
+      memset(str, 0, sizeof(str));
+
+      // https://open-meteo.com/en/docs
+      if (weatherData.weatherCode == 0)
+      {
+        display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, sun);
+      }
+      else if (weatherData.weatherCode > 0 && weatherData.weatherCode < 50)
+      {
+        display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, cloud);
+      }
+      else if (weatherData.weatherCode > 50 && weatherData.weatherCode < 70)
+      {
+        display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, rain);
+      }
+      else if (weatherData.weatherCode > 70 && weatherData.weatherCode < 90)
+      {
+        display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, snow);
+      }
     }
-    else if (weatherData.weatherCode > 0 && weatherData.weatherCode < 50)
+    else
     {
-      display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, cloud);
-    }
-    else if (weatherData.weatherCode > 50 && weatherData.weatherCode < 70)
-    {
-      display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, rain);
-    }
-    else if (weatherData.weatherCode > 70 && weatherData.weatherCode < 90)
-    {
-      display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, snow);
+      // HTTP error
+      snprintf(str, sizeof(str), "HTTP ERROR"); 
+      display.drawString(str, 2);
+      memset(str, 0, sizeof(str));
+
+      snprintf(str, sizeof(str), "%s", esp_err_to_name(weatherData.err)); 
+      display.drawString(str, 3);
+      memset(str, 0, sizeof(str));
+
+      snprintf(str, sizeof(str), "CHECK WIFI OR API"); 
+      display.drawString(str, 4);
+      memset(str, 0, sizeof(str));
     }
 
     // every minute
-    vTaskDelay(pdMS_TO_TICKS(10000));
+    vTaskDelay(pdMS_TO_TICKS(30000));
   }
 }
 

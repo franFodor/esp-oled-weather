@@ -101,6 +101,7 @@ void Http::parseJson(const char *json, WeatherData *weatherData)
   weatherData->humidity = Http::extractValue(json, "relative_humidity_2m");
   weatherData->wind = Http::extractValue(json, "wind_speed_10m");
   weatherData->weatherCode = Http::extractValue(json, "weather_code");
+  weatherData->valid = true;
 
   // ESP_LOGI(TAG, "Temperature: %.2f C", weatherData.temperature);
   // ESP_LOGI(TAG, "Humidity: %.0f %%", weatherData.humidity);
@@ -118,6 +119,7 @@ WeatherData Http::getWeather()
   m_responseLength = 0;
   memset(m_responseBuffer, 0, sizeof(m_responseBuffer));
   WeatherData weatherData;
+  weatherData.valid = false;
 
   esp_http_client_handle_t client = esp_http_client_init(&m_httpConfig);
   esp_err_t err = esp_http_client_perform(client);
@@ -130,6 +132,7 @@ WeatherData Http::getWeather()
   }
   else
   {
+    weatherData.err = err;
     ESP_LOGE(TAG, "Request failed: %s", esp_err_to_name(err));
   }
 
