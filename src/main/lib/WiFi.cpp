@@ -9,12 +9,15 @@
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "esp_sntp.h"
+#include "time.h"
 
 #include "WiFi.h"
 #include "Http.h"
 
 static const char *TAG = "ESP_WIFI";
 bool WiFi::m_gotIp = false;
+bool WiFi::m_timeSet = false;
 
 /**
  * @brief Initialize WiFi in STA mode with credentials from menuconfig.
@@ -73,6 +76,7 @@ void WiFi::ipEventHandler(void* arg, esp_event_base_t event_base,
   {
     m_gotIp = true;
     ESP_LOGI(TAG, "IP acquired");
+    setCurrentTime();
   }
 }
 
@@ -108,7 +112,7 @@ void WiFi::wifiEventHandler(void* arg, esp_event_base_t event_base,
 }
 
 /**
- * @brief   Wrapper for HTTP getWeather
+ * @brief   Wrapper for HTTP getWeather.
  *
  * @returns WeatherData
  *          struct containing current weather information
@@ -119,4 +123,42 @@ WeatherData WiFi::getWeatherData()
 
   weatherData = m_http.getWeather();
   return weatherData;
+}
+
+/**
+ * @brief Set current time using the CET timezone using SNTP.
+ *
+ */
+void WiFi::setCurrentTime()
+{
+  esp_sntp_stop();
+
+  esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  esp_sntp_setservername(0, "pool.ntp.org");
+  esp_sntp_init();
+
+  int retry = 0;
+  const int retry_count = 15;
+
+  while (esp_sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && retry < retry_count) {
+    ESP_LOGI(TAG, "Waiting for NTP sync...");
+    retry++;
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+
+  if (retry < retry_count)
+  {
+    setenv("TZ", "CET-1", 1);
+    tzset();
+    time_t now;
+    struct tm timeinfo;
+
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    m_timeSet = true;
+  }
+  else
+  {
+    ESP_LOGE(TAG, "Failed to set time!");
+  }
 }

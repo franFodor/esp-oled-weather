@@ -12,6 +12,7 @@
 #include "SSD1306.h"
 #include "font.h"
 #include <cstdio>
+#include "time.h"
 
 static const char *TAG = "ESP32-WEATHER";
 
@@ -22,17 +23,31 @@ void displayTask(void *pvParameters)
   WeatherData weatherData;
   char str[SSD1306_WIDTH];
 
-  // wait for wifi to connect
-  while (!wifi.m_gotIp)
+  // wait for wifi to connect and set time
+  while (!wifi.m_timeSet)
   {
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 
+  time_t now;
+  struct tm timeinfo;
+
+  time(&now);
+  localtime_r(&now, &timeinfo);
+
+  ESP_LOGI(TAG, "Current time: %s", asctime(&timeinfo)); 
+
   while (1)
   {
+    time(&now);
+    localtime_r(&now, &timeinfo);
     ESP_LOGI(TAG, "Refreshing data...");
+
     weatherData = wifi.getWeatherData();
-    display.drawString("NASICE WEATHER", 0);
+
+    snprintf(str, sizeof(str), "NASICE          %d:%d", timeinfo.tm_hour, timeinfo.tm_min);
+    display.drawString(str, 0);
+    memset(str, 0, sizeof(str));
 
     snprintf(str, sizeof(str), "TEMPERATURE: %.2f C", weatherData.temperature);
     display.drawString(str, 2);
