@@ -23,6 +23,7 @@ public:
   void    drawString(const char *str, uint8_t line);
   void    clear();
   bool    checkConnection();
+  void    drawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap);
 
 private:
   void    update();

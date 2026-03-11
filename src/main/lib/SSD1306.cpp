@@ -140,3 +140,50 @@ void SSD1306::drawString(const char *str, uint8_t line)
 
   update();
 }
+
+/**
+ * @brief Draws bitmap to the screen at the given position.
+ *
+ * @param uint8_t x
+ *        starting pixel (rows)
+ * @param uint8_t y
+ *        starting pixel (columns)
+ * @param const uint8_t *bitmap
+ *        pointer to the bitmap to draw
+ */
+void SSD1306::drawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap)
+{
+  if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT)
+    return;
+
+  // loop through bitmap rows (bitmap is 16x16)
+  for (int row = 0; row < 16; row++)
+  {
+    // combine two bytes
+    uint16_t rowData = (bitmap[row * 2] << 8) | bitmap[row * 2 + 1];
+
+    // loop through columns
+    for (int col = 0; col < 16; col++)
+    {
+      // check if that pixel should be turned on
+      if (rowData & (1 << (15 - col)))
+      {
+        // calculate specific coordinates
+        uint8_t px = x + col;
+        uint8_t py = y + row;
+
+        if (px >= SSD1306_WIDTH || py >= SSD1306_HEIGHT)
+          continue;
+
+        // convert y to page number
+        uint8_t pageIndex = py / 8;
+        uint8_t bit = py % 8;
+
+        // set pixel in the buffer
+        m_buffer[pageIndex * SSD1306_WIDTH + px] |= (1 << bit);
+      }
+    }
+  }
+
+  update();
+}
