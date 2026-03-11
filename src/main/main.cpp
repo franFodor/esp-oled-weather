@@ -23,6 +23,9 @@ void displayTask(void *pvParameters)
   WeatherData weatherData;
   char str[SSD1306_WIDTH];
 
+  display.drawString("CONNECTING TO", 0);
+  display.drawString("WIFI...", 1);
+
   // wait for wifi to connect and set time
   while (!wifi.m_timeSet)
   {
@@ -39,6 +42,14 @@ void displayTask(void *pvParameters)
 
   while (1)
   {
+    display.clear();
+    // check if wifi is still available
+    while (!wifi.m_gotIp)
+    {
+      display.drawString("WIFI RECONNECTING...", 2);
+    }
+    display.clear();
+
     time(&now);
     localtime_r(&now, &timeinfo);
     ESP_LOGI(TAG, "Refreshing data...");
@@ -79,7 +90,7 @@ void displayTask(void *pvParameters)
       display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, snow);
     }
 
-    // every minute, currently 10 sec
+    // every minute
     vTaskDelay(pdMS_TO_TICKS(10000));
   }
 }

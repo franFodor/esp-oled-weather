@@ -78,6 +78,10 @@ void WiFi::ipEventHandler(void* arg, esp_event_base_t event_base,
     ESP_LOGI(TAG, "IP acquired");
     setCurrentTime();
   }
+  if (event_id == IP_EVENT_STA_LOST_IP)
+  {
+    ESP_LOGI(TAG, "ip lost");
+  }
 }
 
 /**
@@ -106,8 +110,8 @@ void WiFi::wifiEventHandler(void* arg, esp_event_base_t event_base,
   {
     // TODO alert the user and try to reconnect, stop the pinging task
     m_gotIp = false;
-    ESP_ERROR_CHECK(esp_wifi_connect());
     ESP_LOGI(TAG, "Failed connect to the AP, retrying...");
+    ESP_ERROR_CHECK(esp_wifi_connect());
   }
 }
 
