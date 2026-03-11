@@ -8,7 +8,7 @@
 #include "esp_http_client.h"
 #include "esp_log.h"
 
-#include "../include/Http.h"
+#include "Http.h"
 
 static const char *TAG = "ESP_HTTP";
 
@@ -22,12 +22,10 @@ int Http::m_responseLength = 0;
  */
 Http::Http()
 {
-  esp_http_client_config_t http_config = {};
-  http_config.url = WEATHER_URL;
-  http_config.method = HTTP_METHOD_GET;
-  http_config.event_handler = Http::httpEventHandler;
-
-  m_client = esp_http_client_init(&http_config);
+  m_httpConfig = {};
+  m_httpConfig.url = WEATHER_URL;
+  m_httpConfig.method = HTTP_METHOD_GET;
+  m_httpConfig.event_handler = Http::httpEventHandler;
 }
 
 /**
@@ -46,6 +44,7 @@ esp_err_t Http::httpEventHandler(esp_http_client_event_t *evt)
       ::memcpy(m_responseBuffer + m_responseLength, evt->data ,evt->data_len);
       m_responseLength += evt->data_len;
     } else {
+      // TODO doesnt work on pc
       return ESP_ERR_HTTP_RANGE_NOT_SATISFIABLE;
     }
     break;
@@ -117,19 +116,24 @@ void Http::parseJson(const char *json, WeatherData *weatherData)
 WeatherData Http::getWeather()
 {
   m_responseLength = 0;
+  memset(m_responseBuffer, 0, sizeof(m_responseBuffer));
   WeatherData weatherData;
 
-  esp_err_t err = esp_http_client_perform(m_client);
+  esp_http_client_handle_t client = esp_http_client_init(&m_httpConfig);
+  esp_err_t err = esp_http_client_perform(client);
 
-  if (err == ESP_OK) {
-    m_responseBuffer[m_responseLength] = 0;
-
+  if (err == ESP_OK)
+  {
     // ESP_LOGI(TAG, "response received %s", m_responseBuffer);
 
     Http::parseJson(m_responseBuffer, &weatherData);
-  } else {
+  }
+  else
+  {
     ESP_LOGE(TAG, "Request failed: %s", esp_err_to_name(err));
   }
+
+  esp_http_client_cleanup(client);
 
   return weatherData;
 }

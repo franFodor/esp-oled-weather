@@ -16,7 +16,7 @@
 
 typedef struct {
   float temperature;
-  float humidity;
+  int   humidity;
   float wind;
   int   weatherCode; // for displaying icon on OLED :)
 } WeatherData;
@@ -34,7 +34,7 @@ private:
   static char              m_responseBuffer[BUFFER_SIZE];
   static int               m_responseLength;
   WeatherData              m_weatherData;
-  esp_http_client_handle_t m_client = nullptr;
+  esp_http_client_config_t m_httpConfig;
 };
 
 #endif

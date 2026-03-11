@@ -9,18 +9,19 @@
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
-#include "sdkconfig.h"
 
-#include "../include/WiFi.h"
-#include "../include/Http.h"
+#include "WiFi.h"
+#include "Http.h"
 
 static const char *TAG = "ESP_WIFI";
+bool WiFi::m_gotIp = false;
 
 /**
  * @brief Initialize WiFi in STA mode with credentials from menuconfig.
  *
  */
-WiFi::WiFi() {
+WiFi::WiFi()
+{
   ESP_ERROR_CHECK(nvs_flash_init());
   ESP_ERROR_CHECK(esp_netif_init());
   ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -68,17 +69,11 @@ WiFi::WiFi() {
 void WiFi::ipEventHandler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
-    if (event_id == IP_EVENT_STA_GOT_IP) {
-        // TODO start a task to ping every minute
-        Http Htpp;
-        WeatherData weatherData;
-        weatherData = Htpp.getWeather();
-
-        ESP_LOGI(TAG, "Temperature: %.2f C", weatherData.temperature);
-        ESP_LOGI(TAG, "Humidity: %.0f %%", weatherData.humidity);
-        ESP_LOGI(TAG, "Wind: %.2f km/h", weatherData.wind);
-        ESP_LOGI(TAG, "Weather code: %d", weatherData.weatherCode);
-    }
+  if (event_id == IP_EVENT_STA_GOT_IP)
+  {
+    m_gotIp = true;
+    ESP_LOGI(TAG, "IP acquired");
+  }
 }
 
 /**
@@ -99,11 +94,29 @@ void WiFi::ipEventHandler(void* arg, esp_event_base_t event_base,
 void WiFi::wifiEventHandler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
-    if (event_id == WIFI_EVENT_STA_START) {
-        ESP_ERROR_CHECK(esp_wifi_connect());
-    } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        // TODO alert the user and try to reconnect, stop the pinging task
-        ESP_ERROR_CHECK(esp_wifi_connect());
-        ESP_LOGI(TAG, "Failed connect to the AP, retrying...");
-    }
+  if (event_id == WIFI_EVENT_STA_START)
+  {
+    ESP_ERROR_CHECK(esp_wifi_connect());
+  }
+  else if (event_id == WIFI_EVENT_STA_DISCONNECTED)
+  {
+    // TODO alert the user and try to reconnect, stop the pinging task
+    m_gotIp = false;
+    ESP_ERROR_CHECK(esp_wifi_connect());
+    ESP_LOGI(TAG, "Failed connect to the AP, retrying...");
+  }
+}
+
+/**
+ * @brief   Wrapper for HTTP getWeather
+ *
+ * @returns WeatherData
+ *          struct containing current weather information
+ */
+WeatherData WiFi::getWeatherData()
+{
+  WeatherData weatherData;
+
+  weatherData = m_http.getWeather();
+  return weatherData;
 }

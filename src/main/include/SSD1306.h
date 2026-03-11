@@ -22,6 +22,7 @@ public:
   SSD1306();
   void    drawString(const char *str, uint8_t line);
   void    clear();
+  bool    checkConnection();
 
 private:
   void    update();

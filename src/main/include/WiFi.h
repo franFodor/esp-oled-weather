@@ -8,19 +8,22 @@
 #ifndef WIFI_H_
 #define WIFI_H_
 
+#include "Http.h"
 #include "esp_event.h"
-
-// TODO maybe need to sync time
 
 class WiFi
 {
 public:
   WiFi();
+  WeatherData    getWeatherData();
+  static bool    m_gotIp;
+
 private:
   static void    ipEventHandler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data);
   static void    wifiEventHandler(void* arg, esp_event_base_t event_base,
                                   int32_t event_id, void* event_data);
+  Http           m_http;
 };
 
 #endif

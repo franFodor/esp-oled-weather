@@ -10,8 +10,8 @@
 #include "esp_log.h"
 #include <string.h>
 
-#include "include/font.h"
-#include "include/I2C.h"
+#include "font.h"
+#include "I2C.h"
 
 static const char *TAG = "ESP_SSD1306";
 
