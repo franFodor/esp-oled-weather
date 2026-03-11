@@ -6,6 +6,7 @@
  */
 
 #include "ssd1306.h"
+#include "esp_err.h"
 #include "esp_log.h"
 #include <string.h>
 
@@ -15,7 +16,7 @@
 static const char *TAG = "ESP_SSD1306";
 
 // SSD1306 datasheet pg. 64 with some additions gathered from testing denoted by *
-static const uint8_t init_cmds[27] =
+static const uint8_t initCmds[27] =
 {
   0xA8, 0x3F,       // set MUX ratio
   0xD3, 0x00,       // set display offset
@@ -43,7 +44,7 @@ SSD1306::SSD1306()
 {
   I2C m_I2C;
 
-  for (auto cmd : init_cmds)
+  for (auto cmd : initCmds)
     sendCommand(cmd);
 
   clear();
@@ -62,7 +63,7 @@ void SSD1306::sendCommand(uint8_t cmd)
   // for commands D/C# pin needs to be LOW
   uint8_t data[2] = {0x00, cmd};
 
-  m_I2C.transaction(data, 2);
+  ESP_ERROR_CHECK(m_I2C.transaction(data, 2));
 }
 
 /**
@@ -86,7 +87,7 @@ void SSD1306::update()
   buffer[0] = 0x40;
   memcpy(buffer + 1, m_buffer, sizeof(m_buffer));
 
-  m_I2C.transaction(buffer, sizeof(buffer));
+  ESP_ERROR_CHECK(m_I2C.transaction(buffer, sizeof(buffer)));
 }
 
 /**
@@ -129,10 +130,12 @@ void SSD1306::drawString(const char *str, uint8_t line)
   while(*str)
   {
     drawChar(pixelPointer, line, *str++);
+    // move pointer to next spot
     pixelPointer += 6;
 
     // out of bounds
-    if(pixelPointer > 122) break;
+    if(pixelPointer > (SSD1306_WIDTH - 8))
+      break;
   }
 
   update();

@@ -12,15 +12,11 @@
 #include <cstddef>
 #include <stdint.h>
 
-#define I2C_SDA GPIO_NUM_6
-#define I2C_SCL GPIO_NUM_7
-#define SSD_ADDR 0x3C
-
 class I2C
 {
 public:
   I2C();
-  void       transaction(uint8_t *data, size_t len);
+  bool       transaction(uint8_t *data, size_t len);
 
 private:
   void       start();

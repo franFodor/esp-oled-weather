@@ -20,6 +20,7 @@ extern "C" void app_main()
 
   SSD1306 display;
 
-  display.drawString("TESTING", 0);
+  display.drawString("STM32", 0);
   display.drawString("ESP32", 1);
+  // display.clear();
 }

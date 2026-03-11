@@ -1,4 +1,3 @@
-
 /**
  * I2C.cpp
  *
@@ -10,27 +9,27 @@
 #include "driver/gpio.h"
 #include "rom/ets_sys.h"
 
-/**
- * Helper macros for I2C communication.
- */
+// helper macros for I2C communication.
 #define SET_HIGH(pin)  gpio_set_level(pin, 1);
 #define SET_LOW(pin)   gpio_set_level(pin, 0);
 #define DELAY(us)      ets_delay_us(us);
 
-#define WAIT_LOW(pin)  while (gpio_get_level(pin)) continue;
-#define WAIT_HIGH(pin) while (!gpio_get_level(pin)) continue;
+// datasheet recommends min 2.5 us for clock cycle
+#define I2C_CLOCK_DELAY      3
 
 /**
  * @brief   Constructor for I2C which sets up I2C pins.
  *
  */
-I2C::I2C() {
-  m_sda = I2C_SDA;
-  m_scl = I2C_SCL;
-  m_addr = SSD_ADDR;
+I2C::I2C()
+{
+  m_sda = (gpio_num_t)CONFIG_I2C_SDA_PIN;
+  m_scl = (gpio_num_t)CONFIG_I2C_SCL_PIN;
+  m_addr = CONFIG_I2C_ADDRESS;
 
   gpio_config_t io_conf = {};
   io_conf.mode = GPIO_MODE_INPUT_OUTPUT_OD;
+  // set 1 to pin in the mask
   io_conf.pin_bit_mask = ((1ULL << m_sda) | (1ULL << m_scl));
   io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
   io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
@@ -52,10 +51,10 @@ void I2C::start()
   // start condition - pull SDA to LOW while SCL is HIGH
   SET_HIGH(m_sda);
   SET_HIGH(m_scl);
-  DELAY(3);
+  DELAY(I2C_CLOCK_DELAY);
   
   SET_LOW(m_sda);
-  DELAY(3);
+  DELAY(I2C_CLOCK_DELAY);
   SET_LOW(m_scl);
 }
 
@@ -70,10 +69,10 @@ void I2C::stop()
   // stop condition - pull SDA to HIGH while SCL is HIGH
   SET_LOW(m_sda);
   SET_HIGH(m_scl);
-  DELAY(3);
+  DELAY(I2C_CLOCK_DELAY);
 
   SET_HIGH(m_sda);
-  DELAY(3);
+  DELAY(I2C_CLOCK_DELAY);
 }
 
 /**
@@ -103,22 +102,23 @@ bool I2C::sendByte(uint8_t byte)
 
     // transmit data on clock
     SET_HIGH(m_scl);
-    DELAY(3);
+    DELAY(I2C_CLOCK_DELAY);
     SET_LOW(m_scl);
-    DELAY(3);
+    DELAY(I2C_CLOCK_DELAY);
 
+    // "select" next bit
     byte <<= 1;
   }
 
   // ACK signal - SDA pulled down during SCL HIGH
   SET_HIGH(m_sda);
   SET_HIGH(m_scl);
-  DELAY(3);
+  DELAY(I2C_CLOCK_DELAY);
 
   bool ack = !gpio_get_level(m_sda);
   
   SET_LOW(m_scl);
-  DELAY(3);
+  DELAY(I2C_CLOCK_DELAY);
 
   return ack;
 }
@@ -132,20 +132,27 @@ bool I2C::sendByte(uint8_t byte)
  *          data to be sent
  * @param   size_t len
  *          size of data array
+ * @returns bool
+ *          0 if transaction was successfull
  * 
  */
-void I2C::transaction(uint8_t *data, size_t len)
+bool I2C::transaction(uint8_t *data, size_t len)
 {
   start();
 
   if (!sendByte(m_addr << 1))
-    stop();
+    goto end;
   if (!sendByte(data[0]))
-    stop();
-  for(int i = 1; i < len; i++) {
+    goto end;
+  for(int i = 1; i < len; i++)
+  {
     if (!sendByte(data[i]))
-      stop();
+      goto end;
   }
 
   stop();
+  return 0;
+end:
+  stop();
+  return 1;
 }
