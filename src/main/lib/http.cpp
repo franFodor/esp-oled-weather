@@ -8,6 +8,7 @@
 
 #include "esp_http_client.h"
 #include "esp_log.h"
+#include "sdkconfig.h"
 #include <cstdio>
 
 #include "include/http.h"
@@ -175,6 +176,11 @@ Coordinates Http::getCoordinates()
   memset(m_responseBuffer, 0, sizeof(m_responseBuffer));
   char location[URL_SIZE];
   Coordinates coordinates;
+
+  if (strlen(CONFIG_WEATHER_LOCATION) == 0) {
+    ESP_LOGE(TAG, "Weather location not set. Run menuconfig.");
+    abort();
+  }
 
   snprintf(location, sizeof(location), LOCATION_URL, CONFIG_WEATHER_LOCATION);
 
