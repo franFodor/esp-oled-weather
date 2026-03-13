@@ -55,6 +55,16 @@ Project connects to your WiFi network and performs the following:
 | 3.3V  | 3.3V    |
 | GND   | GND     |
 
+Example output in serial monitor:
+```shell
+I (5776) ESP32-WEATHER: Refreshing data...
+I (5916) ESP32_PRINT: NASICE
+I (5916) ESP32_PRINT: TEMPERATURE: 16.60 C
+I (5926) ESP32_PRINT: WIND SPEED: 9.40 M/S
+I (5936) ESP32_PRINT: HUMIDITY: 64
+I (5946) ESP32_PRINT: 14:35
+```
+
 ### Software
 
 - ESP-IDF v5.0 or above
