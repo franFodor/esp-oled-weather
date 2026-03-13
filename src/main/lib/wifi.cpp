@@ -17,8 +17,10 @@
 #include "include/http.h"
 
 static const char *TAG = "ESP_WIFI";
-bool WiFi::m_gotIp = false;
-bool WiFi::m_timeSet = false;
+
+bool  WiFi::m_timeSet = false;
+bool  WiFi::m_ready = false;
+Http* WiFi::m_http = nullptr;
 
 /**
  * @brief Initialize WiFi in STA mode with credentials from menuconfig.
@@ -84,10 +86,11 @@ void WiFi::ipEventHandler(void* arg, esp_event_base_t event_base,
 {
   if (event_id == IP_EVENT_STA_GOT_IP)
   {
-    m_gotIp = true;
     ESP_LOGI(TAG, "IP acquired");
     if (!m_timeSet)
       setCurrentTime();
+    m_http = new Http();
+    m_ready = true;
   }
   if (event_id == IP_EVENT_STA_LOST_IP)
   {
@@ -119,8 +122,6 @@ void WiFi::wifiEventHandler(void* arg, esp_event_base_t event_base,
   }
   else if (event_id == WIFI_EVENT_STA_DISCONNECTED)
   {
-    // TODO alert the user and try to reconnect, stop the pinging task
-    m_gotIp = false;
     ESP_LOGI(TAG, "Failed connect to the AP, retrying...");
   }
 }
@@ -135,7 +136,7 @@ WeatherData WiFi::getWeatherData()
 {
   WeatherData weatherData;
 
-  weatherData = m_http.getWeather();
+  weatherData = m_http->getWeather();
   return weatherData;
 }
 

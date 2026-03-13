@@ -12,8 +12,11 @@
 #include "esp_err.h"
 #include "esp_http_client.h"
 
-#define WEATHER_URL "http://api.open-meteo.com/v1/forecast?latitude=45.4886&longitude=18.0878&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code"
+#define LOCATION_URL "http://geocoding-api.open-meteo.com/v1/search?name=%s&count=1&language=en&format=json"
+#define WEATHER_URL  "http://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code"
+
 #define BUFFER_SIZE 1024
+#define URL_SIZE 256
 
 typedef struct {
   float     temperature;
@@ -23,6 +26,11 @@ typedef struct {
   bool      valid;
   esp_err_t err;         // if http error occured
 } WeatherData;
+
+typedef struct {
+  float longitude;
+  float latitude;
+} Coordinates;
 
 /**
  * @brief Base class for HTTP functionality.
@@ -34,9 +42,12 @@ public:
   WeatherData              getWeather();
 private:
   static esp_err_t         httpEventHandler(esp_http_client_event_t *evt);
-  static void              parseJson(const char *json, WeatherData *weatherData);
-  static float             extractValue(const char *json, const char *key);
+  static void              extractWeather(const char *json, WeatherData *weatherData);
+  static float             extractValue(const char *json, const char *key, bool weather);
+  static void              extractCoordinates(const char *json, Coordinates *coordinates);
+  Coordinates              getCoordinates();
 
+  static char              m_weatherUrl[URL_SIZE];
   static char              m_responseBuffer[BUFFER_SIZE];
   static int               m_responseLength;
   WeatherData              m_weatherData;

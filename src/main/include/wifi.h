@@ -21,8 +21,7 @@ public:
   WiFi();
   WeatherData    getWeatherData();
   static bool    connect();
-  static bool    m_gotIp;
-  static bool    m_timeSet;
+  static bool    m_ready;
 
 private:
   static void    ipEventHandler(void* arg, esp_event_base_t event_base,
@@ -30,7 +29,8 @@ private:
   static void    wifiEventHandler(void* arg, esp_event_base_t event_base,
                                   int32_t event_id, void* event_data);
   static void    setCurrentTime();
-  Http           m_http;
+  static Http*   m_http;
+  static bool    m_timeSet;
 };
 
 #endif

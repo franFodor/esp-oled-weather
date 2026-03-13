@@ -23,3 +23,10 @@ config I2C_ADDRESS
 	default 0x3C
 
 endmenu
+
+menu "Weather Location"
+config WEATHER_LOCATION
+	string "Weather Location"
+	default ""
+
+endmenu

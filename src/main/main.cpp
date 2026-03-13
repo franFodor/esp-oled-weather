@@ -9,6 +9,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include <cstdio>
+#include "sdkconfig.h"
 #include "time.h"
 
 #include "print_utils.h"
@@ -45,7 +46,7 @@ void watchdogTask(void *pvParameters)
     }
 
     bool displayed = false;
-    while (!wifi.m_gotIp)
+    while (!wifi.m_ready)
     {
       if (!displayed)
       {
@@ -83,7 +84,7 @@ void displayTask(void *pvParameters)
   util::print(display, 1, "WIFI...");
 
   // wait for wifi to connect and set time
-  while (!wifi.m_timeSet)
+  while (!wifi.m_ready)
   {
     vTaskDelay(pdMS_TO_TICKS(100));
   }
@@ -108,7 +109,7 @@ void displayTask(void *pvParameters)
 
     if (weatherData.valid)
     {
-      util::print(display, 0, "NASICE");
+      util::print(display, 0, "%s", CONFIG_WEATHER_LOCATION);
       util::print(display, 2, "TEMPERATURE: %.2f C", weatherData.temperature);
       util::print(display, 3, "WIND SPEED: %.2f M/S", weatherData.wind);
       util::print(display, 4, "HUMIDITY: %d%%", weatherData.humidity);
