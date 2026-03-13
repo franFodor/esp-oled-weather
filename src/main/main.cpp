@@ -1,26 +1,27 @@
 /**
- * main.cpp
+ * @file   main.cpp
  *
- * Created on: Mar 6, 2026
- *     Author: Fran Fodor
+ * @brief  Main program functinality using FreeRTOS tasks.
+ *
+ * @author Fran Fodor
  */
 
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
-
-#include "WiFi.h"
-#include "SSD1306.h"
-#include "font.h"
 #include <cstdio>
 #include "time.h"
 
 #include "print_utils.h"
+#include "WiFi.h"
+#include "SSD1306.h"
+#include "font.h"
 
 static const char *TAG = "ESP32-WEATHER";
 
 TaskHandle_t displayHandle;
 TaskHandle_t watchdogHandle;
 
+// wrapper for shared classes between tasks
 struct SharedData
 {
   WiFi wifi;
@@ -32,7 +33,7 @@ void watchdogTask(void *pvParameters)
   SharedData &sharedData = *static_cast<SharedData *>(pvParameters);
   WiFi wifi = sharedData.wifi;
   SSD1306 display = sharedData.display;
-  // since this task refreshes every 5 seconds, when counter reaches 12 minute has passed
+  // since this task refreshes every 5 seconds, when counter reaches 30 minute has passed
   uint8_t minuteCounter = 0;
 
   while (1)
@@ -57,22 +58,21 @@ void watchdogTask(void *pvParameters)
     }
 
     minuteCounter++;
-    if (minuteCounter > 5 || displayed == true)
+    if (minuteCounter >= 30 || displayed == true)
     {
       xTaskNotifyGive(displayHandle);
       minuteCounter = 0;
       displayed = false;
     }
 
-    util::print("%d", minuteCounter);
-
-    // every 5 seconds
-    vTaskDelay(pdMS_TO_TICKS(5000));
+    // every 2 seconds
+    vTaskDelay(pdMS_TO_TICKS(2000));
   }
 }
 
 void displayTask(void *pvParameters)
 {
+  // cpp magic
   SharedData &sharedData = *static_cast<SharedData *>(pvParameters);
   WiFi wifi = sharedData.wifi;
   SSD1306 display = sharedData.display;
@@ -143,10 +143,9 @@ void displayTask(void *pvParameters)
       util::print(display, 4, "CHECK WIFI OR API");
     }
 
-    // every minute
     xTaskNotifyGive(watchdogHandle);
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-    // vTaskDelay(pdMS_TO_TICKS(30000));
+    // vTaskDelay(pdMS_TO_TICKS(60000));
   }
 }
 

@@ -1,8 +1,9 @@
 /**
- * I2C.h
+ * @file   I2C.h
  *
- * Created on: Mar 9, 2026
- *     Author: Fran Fodor
+ * @brief  Functions for I2C communication.
+ *
+ * @author Fran Fodor
  */
 
 #ifndef I2C_H_
@@ -12,6 +13,9 @@
 #include <cstddef>
 #include <stdint.h>
 
+/**
+ * @brief Base class for I2C functionality.
+ */
 class I2C
 {
 public:

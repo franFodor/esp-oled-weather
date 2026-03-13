@@ -1,13 +1,15 @@
 /**
- * I2C.cpp
+ * @file   I2C.cpp
  *
- * Created on: Mar 9, 2026
- *     Author: Fran Fodor
+ * @brief  Functions for I2C communication.
+ *
+ * @author Fran Fodor
  */
 
-#include "I2C.h"
 #include "driver/gpio.h"
 #include "rom/ets_sys.h"
+
+#include "include/I2C.h"
 
 // helper macros for I2C communication.
 #define SET_HIGH(pin)  gpio_set_level(pin, 1);

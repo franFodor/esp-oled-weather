@@ -1,14 +1,16 @@
 /**
- * SSD1306.h
+ * @file   SSD1306.h
  *
- * Created on: Mar 9, 2026
- *     Author: Fran Fodor
+ * @brief  Functions for interacting with SSD1306 OLED display.
+ *
+ * @author Fran Fodor
  */
 
 #ifndef SSD1306_H_
 #define SSD1306_H_
 
 #include <stdint.h>
+
 #include "include/I2C.h"
 
 #define SSD1306_WIDTH 128
@@ -16,6 +18,9 @@
 // lines on the display
 #define SSD1306_PAGES (SSD1306_HEIGHT / 8)
 
+/**
+ * @brief Base class for SSD1306 functionality.
+ */
 class SSD1306
 {
 public:

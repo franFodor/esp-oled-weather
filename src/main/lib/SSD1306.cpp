@@ -1,18 +1,17 @@
 /**
- * SSD1306.cpp
+ * @file   SSD1306.cpp
  *
- * Created on: Mar 9, 2026
- *     Author: Fran Fodor
+ * @brief  Functions for interacting with SSD1306 OLED display.
+ *
+ * @author Fran Fodor
  */
 
-#include "ssd1306.h"
-#include "SSD1306.h"
 #include "esp_err.h"
 #include "esp_log.h"
-#include <string.h>
 
-#include "font.h"
-#include "I2C.h"
+#include "include/SSD1306.h"
+#include "include/font.h"
+#include "include/I2C.h"
 
 static const char *TAG = "ESP_SSD1306";
 
@@ -129,7 +128,7 @@ void SSD1306::drawChar(uint8_t pixelPointer, uint8_t line, char c)
 
   for(int i = 0; i < 5; i++)
   {
-      m_buffer[line * SSD1306_WIDTH + pixelPointer + i] = font5x7[index][i];
+      m_buffer[line * SSD1306_WIDTH + pixelPointer + i] = font[index][i];
   }
 
   // space between letters

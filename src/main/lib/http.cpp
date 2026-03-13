@@ -1,14 +1,15 @@
 /**
- * Http.cpp
+ * @file   http.cpp
  *
- * Created on: Mar 7, 2026
- *     Author: Fran Fodor
+ * @brief  Functions for HTTP clients.
+ *
+ * @author Fran Fodor
  */
 
 #include "esp_http_client.h"
 #include "esp_log.h"
 
-#include "Http.h"
+#include "include/http.h"
 
 static const char *TAG = "ESP_HTTP";
 
@@ -41,7 +42,7 @@ esp_err_t Http::httpEventHandler(esp_http_client_event_t *evt)
   switch(evt->event_id) {
   case HTTP_EVENT_ON_DATA:
     if (m_responseLength + evt->data_len < BUFFER_SIZE) {
-      ::memcpy(m_responseBuffer + m_responseLength, evt->data ,evt->data_len);
+      memcpy(m_responseBuffer + m_responseLength, evt->data ,evt->data_len);
       m_responseLength += evt->data_len;
     } else {
       // TODO doesnt work on pc
@@ -102,10 +103,6 @@ void Http::parseJson(const char *json, WeatherData *weatherData)
   weatherData->wind = Http::extractValue(json, "wind_speed_10m");
   weatherData->weatherCode = Http::extractValue(json, "weather_code");
   weatherData->valid = true;
-
-  // ESP_LOGI(TAG, "Temperature: %.2f C", weatherData.temperature);
-  // ESP_LOGI(TAG, "Humidity: %.0f %%", weatherData.humidity);
-  // ESP_LOGI(TAG, "Wind: %.2f km/h", weatherData.wind);
 }
 
 /**

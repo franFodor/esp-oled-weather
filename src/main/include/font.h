@@ -1,14 +1,18 @@
 /**
- * font.h
+ * @file   font.h
  *
- * Created on: Mar 10, 2026
- *     Author: Fran Fodor
+ * @brief  Defines for displaying characters and bitmap on SSD1306.
+ *
+ * @author Fran Fodor
  */
+
+#ifndef FONT_H_
+#define FONT_H_
 
 #include <stdint.h>
 
 // https://www.eevblog.com/forum/projects/5x7-or-7x9-dot-matrix-font-files-in-cc/
-static const uint8_t font5x7[65][5] =
+static const uint8_t font[65][5] =
 {
   {0x00,0x00,0x00,0x00,0x00}, // 32 space
   {0x00,0x00,0x5F,0x00,0x00}, // !
@@ -114,3 +118,5 @@ static const uint8_t snow[32] =
   0x20, 0x04, 0x20, 0x02, 0x20, 0x82, 0x11, 0x44,
   0x04, 0x90, 0x0A, 0x28, 0x04, 0x10, 0x00, 0x00
 };
+
+#endif

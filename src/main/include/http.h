@@ -1,8 +1,9 @@
 /**
- * Http.h
+ * @file   http.h
  *
- * Created on: Mar 7, 2026
- *     Author: Fran Fodor
+ * @brief  Functions for HTTP clients.
+ *
+ * @author Fran Fodor
  */
 
 #ifndef HTTP_H_
@@ -23,6 +24,9 @@ typedef struct {
   esp_err_t err;         // if http error occured
 } WeatherData;
 
+/**
+ * @brief Base class for HTTP functionality.
+ */
 class Http
 {
 public:

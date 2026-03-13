@@ -1,16 +1,20 @@
 /**
- * WiFi.h
+ * @file   wifi.h
  *
- * Created on: Mar 7, 2026
- *     Author: Fran Fodor
+ * @brief  Functions for establishing and maintaining WiFi connection.
+ *
+ * @author Fran Fodor
  */
 
 #ifndef WIFI_H_
 #define WIFI_H_
 
-#include "Http.h"
 #include "esp_event.h"
+#include "include/http.h"
 
+/**
+ * @brief Base class for WiFi functionality.
+ */
 class WiFi
 {
 public:

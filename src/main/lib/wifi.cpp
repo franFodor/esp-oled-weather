@@ -1,8 +1,9 @@
 /**
- * WiFi.cpp
+ * @file   wifi.cpp
  *
- * Created on: Mar 7, 2026
- *     Author: Fran Fodor
+ * @brief  Functions for establishing and maintaining WiFi connection.
+ *
+ * @author Fran Fodor
  */
 
 #include "esp_err.h"
@@ -12,8 +13,8 @@
 #include "esp_sntp.h"
 #include "time.h"
 
-#include "WiFi.h"
-#include "Http.h"
+#include "include/wifi.h"
+#include "include/http.h"
 
 static const char *TAG = "ESP_WIFI";
 bool WiFi::m_gotIp = false;
@@ -44,8 +45,8 @@ WiFi::WiFi()
   
   wifi_config_t wifi_config = {};
   // set parameters from menuconfig
-  ::memcpy(wifi_config.sta.ssid, CONFIG_WIFI_SSID, sizeof(CONFIG_WIFI_SSID));
-  ::memcpy(wifi_config.sta.password, CONFIG_WIFI_PASSWORD, sizeof(CONFIG_WIFI_PASSWORD));
+  memcpy(wifi_config.sta.ssid, CONFIG_WIFI_SSID, sizeof(CONFIG_WIFI_SSID));
+  memcpy(wifi_config.sta.password, CONFIG_WIFI_PASSWORD, sizeof(CONFIG_WIFI_PASSWORD));
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
@@ -139,7 +140,7 @@ WeatherData WiFi::getWeatherData()
 }
 
 /**
- * @brief Set current time using the CET timezone using SNTP.
+ * @brief Set current time in CET timezone using SNTP.
  *
  */
 void WiFi::setCurrentTime()
