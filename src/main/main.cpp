@@ -14,20 +14,73 @@
 #include <cstdio>
 #include "time.h"
 
+#include "print_utils.h"
+
 static const char *TAG = "ESP32-WEATHER";
 
-// TODO printing function that prints either to OLED if available otherwise to serial monitor
-// TODO watchdog task to check if WiFi or OLED disconnected 
+TaskHandle_t displayHandle;
+TaskHandle_t watchdogHandle;
 
-void displayTask(void *pvParameters)
+struct SharedData
 {
   WiFi wifi;
   SSD1306 display;
-  WeatherData weatherData;
-  char str[SSD1306_WIDTH];
+};
 
-  display.drawString("CONNECTING TO", 0);
-  display.drawString("WIFI...", 1);
+void watchdogTask(void *pvParameters)
+{
+  SharedData &sharedData = *static_cast<SharedData *>(pvParameters);
+  WiFi wifi = sharedData.wifi;
+  SSD1306 display = sharedData.display;
+  // since this task refreshes every 5 seconds, when counter reaches 12 minute has passed
+  uint8_t minuteCounter = 0;
+
+  while (1)
+  {
+    // get the notif only if its the first iteration
+    if (minuteCounter == 0)
+    {
+      ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    }
+
+    bool displayed = false;
+    while (!wifi.m_gotIp)
+    {
+      if (!displayed)
+      {
+        display.clear();
+        util::print(display, 2, "WIFI RECONNECTING...");
+        displayed = true;
+      }
+      wifi.connect();
+      vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
+    minuteCounter++;
+    if (minuteCounter > 5 || displayed == true)
+    {
+      xTaskNotifyGive(displayHandle);
+      minuteCounter = 0;
+      displayed = false;
+    }
+
+    util::print("%d", minuteCounter);
+
+    // every 5 seconds
+    vTaskDelay(pdMS_TO_TICKS(5000));
+  }
+}
+
+void displayTask(void *pvParameters)
+{
+  SharedData &sharedData = *static_cast<SharedData *>(pvParameters);
+  WiFi wifi = sharedData.wifi;
+  SSD1306 display = sharedData.display;
+
+  WeatherData weatherData;
+
+  util::print(display, 0, "CONNECTING TO");
+  util::print(display, 1, "WIFI...");
 
   // wait for wifi to connect and set time
   while (!wifi.m_timeSet)
@@ -45,14 +98,6 @@ void displayTask(void *pvParameters)
 
   while (1)
   {
-    // check if wifi is still available
-    while (!wifi.m_gotIp)
-    {
-      display.clear();
-      display.drawString("WIFI RECONNECTING...", 2);
-      wifi.connect();
-      vTaskDelay(pdMS_TO_TICKS(100));
-    }
     display.clear();
 
     time(&now);
@@ -63,58 +108,45 @@ void displayTask(void *pvParameters)
 
     if (weatherData.valid)
     {
-      snprintf(str, sizeof(str), "NASICE          %02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
-      display.drawString(str, 0);
-      memset(str, 0, sizeof(str));
-
-      snprintf(str, sizeof(str), "TEMPERATURE: %.2f C", weatherData.temperature);
-      display.drawString(str, 2);
-      memset(str, 0, sizeof(str));
-
-      snprintf(str, sizeof(str), "WIND SPEED: %.2f M/S", weatherData.wind);
-      display.drawString(str, 3);
-      memset(str, 0, sizeof(str));
-
-      snprintf(str, sizeof(str), "HUMIDITY: %d%%", weatherData.humidity);
-      display.drawString(str, 4);
-      memset(str, 0, sizeof(str));
+      util::print(display, 0, "NASICE");
+      util::print(display, 2, "TEMPERATURE: %.2f C", weatherData.temperature);
+      util::print(display, 3, "WIND SPEED: %.2f M/S", weatherData.wind);
+      util::print(display, 4, "HUMIDITY: %d%%", weatherData.humidity);
+      util::print(display, 7, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
 
       // https://open-meteo.com/en/docs
+      const uint8_t *bitmap = nullptr;
       if (weatherData.weatherCode == 0)
       {
-        display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, sun);
+        bitmap = sun;
       }
-      else if (weatherData.weatherCode > 0 && weatherData.weatherCode < 50)
+      else if (weatherData.weatherCode < 50)
       {
-        display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, cloud);
+        bitmap = cloud;
       }
-      else if (weatherData.weatherCode > 50 && weatherData.weatherCode < 70)
+      else if (weatherData.weatherCode < 70)
       {
-        display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, rain);
+        bitmap = rain;
       }
-      else if (weatherData.weatherCode > 70 && weatherData.weatherCode < 90)
+      else if (weatherData.weatherCode < 90)
       {
-        display.drawBitmap(SSD1306_WIDTH - 16 - 8, SSD1306_HEIGHT - 16 - 8, snow);
+        bitmap = snow;
       }
+
+      display.drawBitmap(SSD1306_WIDTH - 16, SSD1306_HEIGHT - 16, bitmap);
     }
     else
     {
       // HTTP error
-      snprintf(str, sizeof(str), "HTTP ERROR"); 
-      display.drawString(str, 2);
-      memset(str, 0, sizeof(str));
-
-      snprintf(str, sizeof(str), "%s", esp_err_to_name(weatherData.err)); 
-      display.drawString(str, 3);
-      memset(str, 0, sizeof(str));
-
-      snprintf(str, sizeof(str), "CHECK WIFI OR API"); 
-      display.drawString(str, 4);
-      memset(str, 0, sizeof(str));
+      util::print(display, 2, "HTTP ERROR");
+      util::print(display, 3, "%s", esp_err_to_name(weatherData.err));
+      util::print(display, 4, "CHECK WIFI OR API");
     }
 
     // every minute
-    vTaskDelay(pdMS_TO_TICKS(30000));
+    xTaskNotifyGive(watchdogHandle);
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    // vTaskDelay(pdMS_TO_TICKS(30000));
   }
 }
 
@@ -122,6 +154,15 @@ extern "C" void app_main()
 {
   ESP_LOGI(TAG, "Initializing...");
 
-  // TODO handle
-  xTaskCreate(displayTask, "Display task", 4096, NULL, 1, NULL);
+  static WiFi wifi;
+  static SSD1306 display;
+
+  static SharedData sharedData =
+  {
+    .wifi = wifi,
+    .display = display,
+  };
+
+  xTaskCreate(displayTask, "Display task", 4096, &sharedData, 1, &displayHandle);
+  xTaskCreate(watchdogTask, "Watchdog task", 4096, &sharedData, 2, &watchdogHandle);
 }

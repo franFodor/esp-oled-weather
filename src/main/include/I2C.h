@@ -17,6 +17,7 @@ class I2C
 public:
   I2C();
   bool       transaction(uint8_t *data, size_t len);
+  bool       checkConnection();
 
 private:
   void       start();

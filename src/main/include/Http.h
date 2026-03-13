@@ -20,7 +20,7 @@ typedef struct {
   float     wind;
   int       weatherCode; // for displaying icon on OLED :)
   bool      valid;
-  esp_err_t err;     // if http error occured
+  esp_err_t err;         // if http error occured
 } WeatherData;
 
 class Http

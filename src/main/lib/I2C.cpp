@@ -156,3 +156,23 @@ end:
   stop();
   return 1;
 }
+
+/**
+ * @brief   Checks I2C connection by checking slave acknowledge.
+ *
+ * SSD1306 datasheet pg. 20
+ *
+ * @returns bool
+ *          0 if connection exists
+ * 
+ */
+bool I2C::checkConnection()
+{
+  bool ret = false;
+
+  start();
+  ret = sendByte(m_addr << 1);
+  stop();
+
+  return ret;
+}

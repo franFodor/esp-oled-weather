@@ -6,6 +6,7 @@
  */
 
 #include "ssd1306.h"
+#include "SSD1306.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include <string.h>
@@ -44,11 +45,16 @@ SSD1306::SSD1306()
 {
   I2C m_I2C;
 
-  for (auto cmd : initCmds)
-    sendCommand(cmd);
+  if (!m_I2C.checkConnection()) {
+    ESP_LOGI(TAG, "SSD1306 connection error.");
+  }
+  else
+  {
+    for (auto cmd : initCmds)
+      sendCommand(cmd);
 
-  clear();
-
+    clear();
+  }
   ESP_LOGI(TAG, "SSD1306 initilization finished!");
 }
 
@@ -82,6 +88,9 @@ void SSD1306::clear()
  */
 void SSD1306::update()
 {
+  if (!m_I2C.checkConnection())
+    return;
+
   uint8_t buffer[sizeof(m_buffer) + 1];
   // for data D/C# pin needs to be HIGH
   buffer[0] = 0x40;
@@ -91,7 +100,18 @@ void SSD1306::update()
 }
 
 /**
- * @brief Draws provided character to the screen.
+ * @brief   Checks I2C connection.
+ *
+ * @returns bool
+ *          0 if connection is not available
+ */
+bool SSD1306::checkConnection()
+{
+  return m_I2C.checkConnection();
+}
+
+/**
+ * @brief Fills the buffer with provided character.
  *
  * @param uint8_t pixelPointer
  *        position of the "cursor", location from which drawing starts
@@ -112,6 +132,7 @@ void SSD1306::drawChar(uint8_t pixelPointer, uint8_t line, char c)
       m_buffer[line * SSD1306_WIDTH + pixelPointer + i] = font5x7[index][i];
   }
 
+  // space between letters
   m_buffer[line * SSD1306_WIDTH + pixelPointer + 5] = 0x00;
 }
 
