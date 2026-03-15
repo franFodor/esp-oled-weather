@@ -166,6 +166,8 @@ void Http::extractCoordinates(const char *json, Coordinates *coordinates)
 /**
  * @brief   Get location data from Open-Meteo API.
  *
+ * Takes location data from menuconfig and performs GET request for it.
+ *
  * @returns Coordinates
  *          struct containing location coordinates
  */

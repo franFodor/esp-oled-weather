@@ -123,6 +123,10 @@ void WiFi::wifiEventHandler(void* arg, esp_event_base_t event_base,
   else if (event_id == WIFI_EVENT_STA_DISCONNECTED)
   {
     ESP_LOGI(TAG, "Failed connect to the AP, retrying...");
+    // delete http client until it reconnects again
+    delete m_http;
+    m_http = nullptr;
+    m_ready = false;
   }
 }
 

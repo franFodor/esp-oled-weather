@@ -173,6 +173,7 @@ bool I2C::checkConnection()
   bool ret = false;
 
   start();
+  // send the address and slave should respond
   ret = sendByte(m_addr << 1);
   stop();
 

@@ -31,6 +31,7 @@ struct SharedData
 
 void watchdogTask(void *pvParameters)
 {
+  // get data from task parameters
   SharedData &sharedData = *static_cast<SharedData *>(pvParameters);
   WiFi wifi = sharedData.wifi;
   SSD1306 display = sharedData.display;
@@ -45,9 +46,11 @@ void watchdogTask(void *pvParameters)
       ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     }
 
+    // check if WiFi is running
     bool displayed = false;
     while (!wifi.m_ready)
     {
+      // if the error was already displayed, skip refreshing the screen constantly and just try to reconnect
       if (!displayed)
       {
         display.clear();
@@ -58,6 +61,7 @@ void watchdogTask(void *pvParameters)
       vTaskDelay(pdMS_TO_TICKS(100));
     }
 
+    // if a minute has passed or WiFi just reconnected update the weather information
     minuteCounter++;
     if (minuteCounter >= 30 || displayed == true)
     {
@@ -83,12 +87,13 @@ void displayTask(void *pvParameters)
   util::print(display, 0, "CONNECTING TO");
   util::print(display, 1, "WIFI...");
 
-  // wait for wifi to connect and set time
+  // wait for wifi to connect
   while (!wifi.m_ready)
   {
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 
+  // update local time
   time_t now;
   struct tm timeinfo;
 

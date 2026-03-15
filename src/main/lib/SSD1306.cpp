@@ -54,6 +54,7 @@ SSD1306::SSD1306()
 
     clear();
   }
+
   ESP_LOGI(TAG, "SSD1306 initilization finished!");
 }
 
@@ -121,12 +122,14 @@ bool SSD1306::checkConnection()
  */
 void SSD1306::drawChar(uint8_t pixelPointer, uint8_t line, char c)
 {
-  // TODO better error recovery, give user message
-  if(c < 32 || c > 127) return;
+  // check if out of bounds for font.h
+  if (c < 32 || c > 97)
+    return;
 
+  // subtract 32 because font.h starts at 32 (space)
   uint16_t index = (c - 32);
 
-  for(int i = 0; i < 5; i++)
+  for (int i = 0; i < 5; i++)
   {
       m_buffer[line * SSD1306_WIDTH + pixelPointer + i] = font[index][i];
   }
@@ -153,7 +156,7 @@ void SSD1306::drawString(const char *str, uint8_t line)
     // move pointer to next spot
     pixelPointer += 6;
 
-    // out of bounds
+    // out of bounds for display
     if(pixelPointer > (SSD1306_WIDTH - 8))
       break;
   }
