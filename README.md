@@ -34,6 +34,7 @@ The project connects to your WiFi network and performs the following:
 
 ## Project Structure
 
+```shell
 src/
 ├── CMakeLists.txt
 └── main
@@ -54,6 +55,7 @@ src/
     │   ├── print_utils.cpp
     │   └── wifi.cpp
     └── main.cpp
+```
 
 ## Prerequisites
 
