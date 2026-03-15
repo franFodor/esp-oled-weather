@@ -2,15 +2,7 @@
 
 ESP32 project which gets weather data using Open-Meteo API and displays it on an OLED display alongside the location, small icon representing the weather and current time.
 
-## Features
-
-- upon boot, ESP tries to connect to the provided WiFi and set up local time to current time in CET timezone
-- displays current location, time and weather with updates every minute
-- upon WiFi disconnecting alerts the user and tries to reconnnect
-- if an HTTP error occured it is also displayed to the user
-
 ![image](docs/esp_weather.png)
-
 
 ![image](docs/wroover.png)
 
@@ -18,9 +10,12 @@ ESP32 project which gets weather data using Open-Meteo API and displays it on an
 
 ### Main program
 
+Upon boot, ESP tries to connect to the provided WiFi and set up local time to current time in CET timezone, displays current location, time and weather with updates every minute.
+Upon WiFi disconnecting alerts the user and tries to reconnnect and if an HTTP error occured it is also displayed to the user.
+
 Main program consists of two FreeRTOS task. `watchdogTask` is used for monitoring WiFi connection and in the event of WiFi disconnecting attempts reconnecting while informing the user. `displayTask` is responsible for fetching the weather data and displaying it to the user.
 
-Since both tasks need to interact with display and WiFi it is important to make them syncronised so that they don't access the same instance at the same time. For synchronisation the **FreeRTOS task notifications** are used.
+Since both tasks need to interact with display and WiFi it is important to make them synchronised so that they don't access the same instance at the same time. For synchronisation the **FreeRTOS task notifications** are used.
 
 ### SSD1306
 
@@ -32,7 +27,7 @@ Project connects to your WiFi network and performs the following:
 - sets up local time using SNTP 
 
 > [!IMPORTANT]
-> Project uses CET timezone, if you with to change it you can do so in `wifi.cpp` in `setCurrentTime` function.
+> If you with to change hte timezone it you can do so in `wifi.cpp` in `setCurrentTime` function.
 
 - gets coordinates for the input location using [Open Meteo Geocoding API](https://open-meteo.com/en/docs/geocoding-api)
 - gets weather information for your location using [Open Meteo Forecast API](https://open-meteo.com/en/docs$0)
@@ -46,14 +41,6 @@ Project connects to your WiFi network and performs the following:
 - [SSD1306 display](https://soldered.com/products/display-oled-i2c-white-0-96-ssd1306?variant=62540973343069$0)
   - if you wish to display data using OLED display, alternatively, you can use the serial monitor instead of the display
   - both the [QWIIC cable](https://docs.soldered.com/qwiic) and regular wiring are supported, see [wiring](#wiring) for deatils
-  - current wiring is like so:
-
-| ESP32 | SSD1306 |
-|-------|---------|
-| IO6   | SDA     |
-| IO7   | SCL     |
-| 3.3V  | 3.3V    |
-| GND   | GND     |
 
 Example output in serial monitor:
 ```shell
@@ -74,12 +61,13 @@ I (5946) ESP32_PRINT: 14:35
 
 ### Wiring
 
-If using QWIIC cable simply connect the ESP and OLED display with it. Otherwise, refer to your ESP documentation and wire accordingly.
+If using QWIIC cable simply connect the ESP and OLED display with it. Otherwise, refer to your ESP and display documentation and wire accordingly.
 
 ### Building and running the project
 
-If not already position yourself in `src` folder using:
+Clone the project and position yourself in `src` folder using:
 ```shell
+git clone https://github.com/franFodor/esp-oled-weather
 cd src
 ```
 
@@ -90,7 +78,7 @@ idf.py set-target
 # idf.py set-target esp32c6
 ```
 
-Before flashing the firmware, configure the project using:
+Before flashing the firmware, you must configure the project using:
 
 ```shell
 idf.py menuconfig
@@ -130,3 +118,6 @@ Alternatively, you can run this one command to perform everything:
 ```shell
 idf.py -p PORT build flash monitor
 ```
+
+> [!TIP]
+> If its your first time running the program it is recommended to monitor the board using serial monitor incase any errors occur.
