@@ -37,15 +37,18 @@ typedef struct {
  */
 class Http
 {
-public:
+private:
   Http();
   WeatherData              getWeather();
-private:
+  Coordinates              getCoordinates();
+
   static esp_err_t         httpEventHandler(esp_http_client_event_t *evt);
   static void              extractWeather(const char *json, WeatherData *weatherData);
-  static float             extractValue(const char *json, const char *key, bool weather);
+  static esp_err_t         extractValue(const char *json, const char *key, float *value, bool weather);
   static void              extractCoordinates(const char *json, Coordinates *coordinates);
-  Coordinates              getCoordinates();
+
+  // restrict access only to WiFi
+  friend class WiFi;
 
   static char              m_weatherUrl[URL_SIZE];
   static char              m_responseBuffer[BUFFER_SIZE];

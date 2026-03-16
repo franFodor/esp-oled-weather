@@ -25,6 +25,7 @@ config I2C_ADDRESS
 endmenu
 
 menu "Weather Location"
+
 config WEATHER_LOCATION
 	string "Weather Location"
 	default ""

@@ -18,15 +18,17 @@
  */
 class I2C
 {
-public:
+private:
   I2C();
   bool       transaction(uint8_t *data, size_t len);
   bool       checkConnection();
 
-private:
   void       start();
   void       stop();
   bool       sendByte(uint8_t byte);
+
+  // restrict access only to SSD1306
+  friend class SSD1306;
 
   gpio_num_t m_sda;
   gpio_num_t m_scl;

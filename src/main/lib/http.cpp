@@ -6,6 +6,7 @@
  * @author Fran Fodor
  */
 
+#include "esp_err.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
 #include "sdkconfig.h"
@@ -47,7 +48,8 @@ esp_err_t Http::httpEventHandler(esp_http_client_event_t *evt)
 {
   switch(evt->event_id) {
   case HTTP_EVENT_ON_DATA:
-    if (m_responseLength + evt->data_len < BUFFER_SIZE) {
+    if (m_responseLength + evt->data_len < BUFFER_SIZE)
+    {
       memcpy(m_responseBuffer + m_responseLength, evt->data ,evt->data_len);
       m_responseLength += evt->data_len;
     }
@@ -74,25 +76,28 @@ esp_err_t Http::httpEventHandler(esp_http_client_event_t *evt)
  * @returns float
  *          value of the given key 
  */
-float Http::extractValue(const char *json, const char *key, bool weather)
+esp_err_t Http::extractValue(const char *json, const char *key, float *value, bool weather)
 {
   const char *current = json;
   if (weather)
   {
     // position the pointer on the "current" field after which keys and values are given
     current = strstr(json, "\"current\":");
+    if (!current) return ESP_ERR_NOT_FOUND;
   }
 
   // position the pointer on the key
   const char *pos = strstr(current, key);
-  if (!pos) return 0;
+  if (!pos) return ESP_ERR_NOT_FOUND;
 
   // position the pointer on the value
   pos = strchr(pos, ':');
-  if (!pos) return 0;
+  if (!pos) return ESP_ERR_NOT_FOUND;
 
   // return the value converted to float
-  return atof(pos + 1);
+  *value = atof(pos + 1);
+
+  return ESP_OK;
 }
 
 /**
@@ -107,10 +112,17 @@ float Http::extractValue(const char *json, const char *key, bool weather)
  */
 void Http::extractWeather(const char *json, WeatherData *weatherData)
 {
-  weatherData->temperature = Http::extractValue(json, "temperature_2m", true);
-  weatherData->humidity = Http::extractValue(json, "relative_humidity_2m", true);
-  weatherData->wind = Http::extractValue(json, "wind_speed_10m", true);
-  weatherData->weatherCode = Http::extractValue(json, "weather_code", true);
+  float humidity;
+  float weatherCode;
+
+  ESP_ERROR_CHECK(Http::extractValue(json, "temperature_2m", &weatherData->temperature, true));
+  ESP_ERROR_CHECK(Http::extractValue(json, "relative_humidity_2m", &humidity, true));
+  ESP_ERROR_CHECK(Http::extractValue(json, "wind_speed_10m", &weatherData->wind, true));
+  ESP_ERROR_CHECK(Http::extractValue(json, "weather_code", &weatherCode, true));
+
+  // automatically convert from float to int
+  weatherData->humidity = humidity;
+  weatherData->weatherCode = weatherCode;
   weatherData->valid = true;
 }
 
@@ -159,8 +171,8 @@ WeatherData Http::getWeather()
  */
 void Http::extractCoordinates(const char *json, Coordinates *coordinates)
 {
-  coordinates->latitude = extractValue(json, "latitude", false);
-  coordinates->longitude = extractValue(json, "longitude", false);
+  ESP_ERROR_CHECK(extractValue(json, "latitude", &coordinates->latitude, false));
+  ESP_ERROR_CHECK(extractValue(json, "longitude", &coordinates->longitude, false));
 }
 
 /**

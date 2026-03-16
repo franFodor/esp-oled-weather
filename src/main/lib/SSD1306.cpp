@@ -8,6 +8,7 @@
 
 #include "esp_err.h"
 #include "esp_log.h"
+#include <cstring>
 
 #include "include/SSD1306.h"
 #include "include/font.h"
