@@ -45,7 +45,7 @@ void util::print(const char *text, ...)
  * @param ...
  *        additional arguments to display
  */
-void util::print(SSD1306& display, uint8_t line, const char *text, ...)
+void util::print(SSD1306& display, uint8_t line, textAlign align, const char *text, ...)
 {
   char buffer[SSD1306_WIDTH];
   va_list args;
@@ -55,7 +55,7 @@ void util::print(SSD1306& display, uint8_t line, const char *text, ...)
 
   if (display.checkConnection())
   {
-    display.drawString(buffer, line);
+    display.drawString(buffer, line, align);
   }
   else
   {

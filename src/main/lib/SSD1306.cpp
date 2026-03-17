@@ -124,11 +124,10 @@ bool SSD1306::checkConnection()
 void SSD1306::drawChar(uint8_t pixelPointer, uint8_t line, char c)
 {
   // check if out of bounds for font.h
-  if (c < 32 || c > 97)
+  if (c < FONT_START || c > FONT_END)
     return;
 
-  // subtract 32 because font.h starts at 32 (space)
-  uint16_t index = (c - 32);
+  uint16_t index = (c - FONT_START);
 
   for (int i = 0; i < 5; i++)
   {
@@ -147,10 +146,37 @@ void SSD1306::drawChar(uint8_t pixelPointer, uint8_t line, char c)
  *        pointer to the string
  * @param uint8_t line
  *        line (page) in the display upon which the string will be drawn
+ * @param TextAlign align
+ *        defaults to ALIGN_LEFT
  */
-void SSD1306::drawString(const char *str, uint8_t line)
+void SSD1306::drawString(const char *str, uint8_t line, textAlign align)
 {
+  if (!str) return;
+
+  uint16_t len = strlen(str);
+  uint16_t textWidth = len * 6; // 5px char + 1px space
+
   uint8_t pixelPointer = 0;
+
+  switch (align)
+  {
+    case ALIGN_LEFT:
+      pixelPointer = 0;
+      break;
+
+    case ALIGN_CENTER:
+      if (textWidth < SSD1306_WIDTH)
+        pixelPointer = (SSD1306_WIDTH - textWidth) / 2;
+      break;
+
+    case ALIGN_RIGHT:
+      if (textWidth < SSD1306_WIDTH)
+        pixelPointer = SSD1306_WIDTH - textWidth;
+      break;
+  }
+
+  memset(&m_buffer[line * SSD1306_WIDTH], 0, SSD1306_WIDTH);
+
   while(*str)
   {
     drawChar(pixelPointer, line, *str++);
@@ -158,7 +184,7 @@ void SSD1306::drawString(const char *str, uint8_t line)
     pixelPointer += 6;
 
     // out of bounds for display
-    if(pixelPointer > (SSD1306_WIDTH - 8))
+    if(pixelPointer  + 5 >= SSD1306_WIDTH)
       break;
   }
 
@@ -166,7 +192,7 @@ void SSD1306::drawString(const char *str, uint8_t line)
 }
 
 /**
- * @brief Draws bitmap to the screen at the given position.
+ * @brief Draws bitmap to the screen at the given position (starting from the top left in the bitmap).
  *
  * @param uint8_t x
  *        starting pixel (rows)
@@ -210,4 +236,49 @@ void SSD1306::drawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap)
   }
 
   update();
+}
+
+/**
+ * @brief Starts the scroll on the given line in the given direction.
+ *
+ * SSD1306 datasheet pg. 44
+ *
+ * @param ScrollDirection direction
+ *        direction of the scroll
+ * @param uint8_t startPage
+ *        page from which the scrolling starts
+ * @param uint8_t endPage
+ *        page where the scrolling ends
+ */
+void SSD1306::startScroll(scrollDirection direction, uint8_t startPage, uint8_t endPage)
+{
+  uint8_t dir;
+
+  if (direction == SCROLL_RIGHT)
+    dir = 0x26;
+  else
+    dir = 0x27;
+
+  sendCommand(dir);         // scroll direction
+  sendCommand(0x00);
+  sendCommand(startPage);   // start page
+  sendCommand(0x00);        // speed
+  sendCommand(endPage);     // end page
+  sendCommand(0x00);
+  sendCommand(0xFF);
+  sendCommand(0x2F);        // activate scroll
+}
+
+/**
+ * @brief Stops the scroll.
+ *
+ * @param bool updateScreen
+ *        if you wish to render the string normally (it might be wrapping around when scrolling stops)
+ *        defaults to false
+ */
+void SSD1306::stopScroll(bool updateScreen)
+{
+  sendCommand(0x2E);        // stop scroll
+  if (updateScreen)
+    update();
 }

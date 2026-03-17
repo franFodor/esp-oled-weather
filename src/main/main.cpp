@@ -54,7 +54,7 @@ void watchdogTask(void *pvParameters)
       if (!displayed)
       {
         display.clear();
-        util::print(display, 2, "WIFI RECONNECTING...");
+        util::print(display, 2, ALIGN_CENTER, "WiFi reconnecting...");
         displayed = true;
       }
       wifi.connect();
@@ -84,8 +84,8 @@ void displayTask(void *pvParameters)
 
   WeatherData weatherData;
 
-  util::print(display, 0, "CONNECTING TO");
-  util::print(display, 1, "WIFI...");
+  util::print(display, 0, ALIGN_CENTER, "Connecting to");
+  util::print(display, 1, ALIGN_CENTER, "WiFi...");
 
   // wait for wifi to connect
   while (!wifi.m_ready)
@@ -93,14 +93,18 @@ void displayTask(void *pvParameters)
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 
-  // update local time
+  // local time
   time_t now;
   struct tm timeinfo;
 
-  time(&now);
-  localtime_r(&now, &timeinfo);
+  // convert location to uppercase no matter what user input
+  char location[SSD1306_WIDTH];
 
-  ESP_LOGI(TAG, "Current time: %s", asctime(&timeinfo)); 
+  snprintf(location, strlen(CONFIG_WEATHER_LOCATION) + 1, "%s", CONFIG_WEATHER_LOCATION);
+  for (int i = 0; location[i] != '\0'; i++)
+  {
+    location[i] = toupper(location[i]);
+  }
 
   while (1)
   {
@@ -109,16 +113,17 @@ void displayTask(void *pvParameters)
     time(&now);
     localtime_r(&now, &timeinfo);
     ESP_LOGI(TAG, "Refreshing data...");
+    ESP_LOGI(TAG, "Current time: %s", asctime(&timeinfo)); 
 
     weatherData = wifi.getWeatherData();
 
     if (weatherData.valid)
     {
-      util::print(display, 0, "%s", CONFIG_WEATHER_LOCATION);
-      util::print(display, 2, "TEMPERATURE: %.2f C", weatherData.temperature);
-      util::print(display, 3, "WIND SPEED: %.2f M/S", weatherData.wind);
-      util::print(display, 4, "HUMIDITY: %d%%", weatherData.humidity);
-      util::print(display, 7, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+      util::print(display, 0, ALIGN_CENTER, "%s", location);
+      util::print(display, 2, ALIGN_LEFT, "Temperature: %.2f C", weatherData.temperature);
+      util::print(display, 3, ALIGN_LEFT, "Wind speed: %.2f m/s", weatherData.wind);
+      util::print(display, 4, ALIGN_LEFT, "Humidity: %d%%", weatherData.humidity);
+      util::print(display, 7, ALIGN_LEFT, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
 
       // https://open-meteo.com/en/docs
       const uint8_t *bitmap = nullptr;
@@ -144,9 +149,9 @@ void displayTask(void *pvParameters)
     else
     {
       // HTTP error
-      util::print(display, 2, "HTTP ERROR");
-      util::print(display, 3, "%s", esp_err_to_name(weatherData.err));
-      util::print(display, 4, "CHECK WIFI OR API");
+      util::print(display, 2, ALIGN_CENTER, "HTTP ERROR");
+      util::print(display, 3, ALIGN_CENTER, "%s", esp_err_to_name(weatherData.err));
+      util::print(display, 4, ALIGN_CENTER, "Check WiFi or API");
     }
 
     xTaskNotifyGive(watchdogHandle);

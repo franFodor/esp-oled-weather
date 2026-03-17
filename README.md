@@ -19,7 +19,7 @@ Since both tasks need to interact with display and WiFi it is important to make 
 
 ### SSD1306
 
-The project uses a custom SSD1306 driver with custom I2C communication. The driver is quite barebones, allowing the user only to print a string at a desired line and a bitmap at a desired position. If you wish to display more complex things like animations, specific text positioning, or extended fonts, it is recommended to use an external library.
+The project uses a custom SSD1306 driver with custom I2C communication. The driver is somewhat barebones, allowing the user to print a string at a desired line and aligned either to the right, centered or to the left, draw bitmap at a desired position and to start scrolling line (or lines) to the left or to the right. If you wish to display more complex things like animations it is recommended to use an external library.
 
 ### Network
 
@@ -120,9 +120,6 @@ Here you need to configure three things:
 
 3. **Weather Location**
    - set the desired location to display weather for
-
-> [!IMPORTANT]
-> Input the location in ALL CAPS as the current SSD1306 driver only supports capital letters!
 
 After configuration, build the project:
 ```shell

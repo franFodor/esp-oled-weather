@@ -18,6 +18,19 @@
 // lines on the display
 #define SSD1306_PAGES (SSD1306_HEIGHT / 8)
 
+enum scrollDirection
+{
+    SCROLL_LEFT,
+    SCROLL_RIGHT
+};
+
+enum textAlign
+{
+    ALIGN_LEFT,
+    ALIGN_CENTER,
+    ALIGN_RIGHT
+};
+
 /**
  * @brief Base class for SSD1306 functionality.
  */
@@ -25,10 +38,13 @@ class SSD1306
 {
 public:
   SSD1306();
-  void    drawString(const char *str, uint8_t line);
+  void    drawString(const char *str, uint8_t line, textAlign align = ALIGN_LEFT);
   void    clear();
   bool    checkConnection();
   void    drawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap);
+
+  void    startScroll(scrollDirection direction, uint8_t startPage, uint8_t endPage);
+  void    stopScroll(bool updateScreen = false);
 
 private:
   void    update();
