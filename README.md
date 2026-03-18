@@ -19,7 +19,11 @@ Since both tasks need to interact with display and WiFi it is important to make 
 
 ### SSD1306
 
-The project uses a custom SSD1306 driver with custom I2C communication. The driver is somewhat barebones, allowing the user to print a string at a desired line and aligned either to the right, centered or to the left, draw bitmap at a desired position and to start scrolling line (or lines) to the left or to the right. If you wish to display more complex things like animations it is recommended to use an external library.
+The project uses a custom SSD1306 driver with custom I2C communication. For usage example check out `SSD1306.h`.
+
+The driver is somewhat barebones, allowing the user to print a string at a desired line and aligned either to the right, centered or to the left, draw bitmap at a desired position and to start scrolling line (or lines) to the left or to the right.
+
+If you wish to display more complex things like animations it is recommended to use an external library.
 
 ### Network
 
@@ -71,10 +75,10 @@ Example output in serial monitor:
 ```shell
 I (5776) ESP32-WEATHER: Refreshing data...
 I (5916) ESP32_PRINT: NASICE
-I (5916) ESP32_PRINT: TEMPERATURE: 16.60 C
-I (5926) ESP32_PRINT: WIND SPEED: 9.40 M/S
-I (5936) ESP32_PRINT: HUMIDITY: 64
-I (5946) ESP32_PRINT: 14:35
+I (5916) ESP32_PRINT: Temperature: 9.60 C
+I (5926) ESP32_PRINT: Wind speed: 21.60 m/s
+I (5936) ESP32_PRINT: Humidity: 60%
+I (5946) ESP32_PRINT: 18.03 09:58
 ```
 
 ### Software

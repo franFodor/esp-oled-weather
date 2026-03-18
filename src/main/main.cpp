@@ -15,7 +15,6 @@
 #include "print_utils.h"
 #include "WiFi.h"
 #include "SSD1306.h"
-#include "font.h"
 
 static const char *TAG = "ESP32-WEATHER";
 
@@ -55,6 +54,7 @@ void watchdogTask(void *pvParameters)
       {
         display.clear();
         util::print(display, 2, ALIGN_CENTER, "WiFi reconnecting...");
+        display.update();
         displayed = true;
       }
       wifi.connect();
@@ -65,6 +65,9 @@ void watchdogTask(void *pvParameters)
     minuteCounter++;
     if (minuteCounter >= 30 || displayed == true)
     {
+      if (displayed)
+        display.clear();
+
       xTaskNotifyGive(displayHandle);
       minuteCounter = 0;
       displayed = false;
@@ -86,12 +89,15 @@ void displayTask(void *pvParameters)
 
   util::print(display, 0, ALIGN_CENTER, "Connecting to");
   util::print(display, 1, ALIGN_CENTER, "WiFi...");
+  display.update();
 
   // wait for wifi to connect
   while (!wifi.m_ready)
   {
     vTaskDelay(pdMS_TO_TICKS(100));
   }
+
+  display.clear();
 
   // local time
   time_t now;
@@ -108,8 +114,6 @@ void displayTask(void *pvParameters)
 
   while (1)
   {
-    display.clear();
-
     time(&now);
     localtime_r(&now, &timeinfo);
     ESP_LOGI(TAG, "Refreshing data...");
@@ -123,27 +127,10 @@ void displayTask(void *pvParameters)
       util::print(display, 2, ALIGN_LEFT, "Temperature: %.2f C", weatherData.temperature);
       util::print(display, 3, ALIGN_LEFT, "Wind speed: %.2f m/s", weatherData.wind);
       util::print(display, 4, ALIGN_LEFT, "Humidity: %d%%", weatherData.humidity);
-      util::print(display, 7, ALIGN_LEFT, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+      util::print(display, 7, ALIGN_LEFT, "%02d.%02d %02d:%02d", timeinfo.tm_mday, timeinfo.tm_mon + 1, timeinfo.tm_hour, timeinfo.tm_min);
 
       // https://open-meteo.com/en/docs
-      const uint8_t *bitmap = nullptr;
-      if (weatherData.weatherCode == 0)
-      {
-        bitmap = sun;
-      }
-      else if (weatherData.weatherCode < 50)
-      {
-        bitmap = cloud;
-      }
-      else if (weatherData.weatherCode < 70)
-      {
-        bitmap = rain;
-      }
-      else if (weatherData.weatherCode < 90)
-      {
-        bitmap = snow;
-      }
-
+      const uint8_t *bitmap = util::getBitmap(weatherData.weatherCode);
       display.drawBitmap(SSD1306_WIDTH - 16, SSD1306_HEIGHT - 16, bitmap);
     }
     else
@@ -153,6 +140,8 @@ void displayTask(void *pvParameters)
       util::print(display, 3, ALIGN_CENTER, "%s", esp_err_to_name(weatherData.err));
       util::print(display, 4, ALIGN_CENTER, "Check WiFi or API");
     }
+
+    display.update();
 
     xTaskNotifyGive(watchdogHandle);
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
@@ -173,6 +162,6 @@ extern "C" void app_main()
     .display = display,
   };
 
-  xTaskCreate(displayTask, "Display task", 4096, &sharedData, 1, &displayHandle);
-  xTaskCreate(watchdogTask, "Watchdog task", 4096, &sharedData, 2, &watchdogHandle);
+  xTaskCreate(displayTask, "Display task", 5000, &sharedData, 1, &displayHandle);
+  xTaskCreate(watchdogTask, "Watchdog task", 5000, &sharedData, 2, &watchdogHandle);
 }

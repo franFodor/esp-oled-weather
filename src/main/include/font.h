@@ -14,8 +14,10 @@
 #define FONT_START 32
 #define FONT_END   122
 
+#define CHARACTER_SIZE 5
+
 // https://www.eevblog.com/forum/projects/5x7-or-7x9-dot-matrix-font-files-in-cc/
-static const uint8_t font[91][5] =
+static const uint8_t font[91][CHARACTER_SIZE] =
 {
   {0x00,0x00,0x00,0x00,0x00}, // 32 space
   {0x00,0x00,0x5F,0x00,0x00}, // !

@@ -17,6 +17,7 @@ namespace util
 {
   void print(const char *text, ...);
   void print(SSD1306& display, uint8_t line, textAlign align, const char *text, ...);
+  const uint8_t* getBitmap(int code);
 }
 
 #endif

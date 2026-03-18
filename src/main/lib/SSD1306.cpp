@@ -26,8 +26,8 @@ static const uint8_t initCmds[27] =
   0x21, 0x00, 0xFF, // column start *
   0x22, 0x00, 0x07, // page start *
   0x40,             // set display start line
-  0xA1,             // set segment re-map
-  0xC8,             // set COM output scan directiom
+  0xA0,             // set segment re-map
+  0xC0,             // set COM output scan directiom
   0xDA, 0x12,       // set COM pins hardware configuration, 0x12 for 128x64
   0x81, 0x7F,       // set contrast control
   0xA4,             // disable entire display
@@ -56,6 +56,10 @@ SSD1306::SSD1306()
     clear();
   }
 
+  memset(m_buffer, 0x00, sizeof(m_buffer));
+  memset(m_prevBuffer, 0x00, sizeof(m_prevBuffer));
+  memset(m_transmitBuffer, 0x00, sizeof(m_transmitBuffer));
+
   ESP_LOGI(TAG, "SSD1306 initilization finished!");
 }
 
@@ -80,6 +84,7 @@ void SSD1306::sendCommand(uint8_t cmd)
 void SSD1306::clear()
 {
   memset(m_buffer, 0x00, sizeof(m_buffer));
+  memset(m_prevBuffer, 0xFF, sizeof(m_prevBuffer));
   update();
 }
 
@@ -92,12 +97,80 @@ void SSD1306::update()
   if (!m_I2C.checkConnection())
     return;
 
-  uint8_t buffer[sizeof(m_buffer) + 1];
-  // for data D/C# pin needs to be HIGH
-  buffer[0] = 0x40;
-  memcpy(buffer + 1, m_buffer, sizeof(m_buffer));
+  for (uint8_t page = 0; page < (SSD1306_HEIGHT / 8); page++)
+  {
+    // sets starting position
+    uint16_t base = page * SSD1306_WIDTH;
 
-  ESP_ERROR_CHECK(m_I2C.transaction(buffer, sizeof(buffer)));
+    // beginning of changed region
+    int start = -1;
+
+    // loop every column on the page
+    for (uint8_t col = 0; col < SSD1306_WIDTH; col++)
+    {
+      // current position
+      uint16_t i = base + col;
+
+      // if the buffers are not the same, update
+      if (m_buffer[i] != m_prevBuffer[i])
+      {
+        // mark the start of changed region
+        if (start == -1)
+          start = col;
+      }
+      else
+      {
+        // the buffers are the same, check if the changed region was set
+        if (start != -1)
+        {
+          // update the part from the current position up until the last column
+          sendChunk(page, start, col - 1);
+          start = -1;
+        }
+      }
+    }
+
+    // flush remaining chunk at end of line
+    if (start != -1)
+    {
+      sendChunk(page, start, SSD1306_WIDTH - 1);
+    }
+  }
+
+  // update the previous buffer
+  memcpy(m_prevBuffer, m_buffer, sizeof(m_buffer));
+}
+
+/**
+ * @brief Sends the chunk of data that needs to be updated.
+ *
+ * @param uint8_t page
+ *        page (line) that needs to be updated
+ * @param uint8_t colStart
+ *        starting position inside the page
+ * @param uint9_t colEnd
+ *        ending position
+ *
+ */
+void SSD1306::sendChunk(uint8_t page, uint8_t colStart, uint8_t colEnd)
+{
+  // set column range
+  sendCommand(0x21);
+  sendCommand(colStart);
+  sendCommand(colEnd);
+
+  // set page
+  sendCommand(0x22);
+  sendCommand(page);
+  sendCommand(page);
+
+  // number of bytes to send
+  uint8_t width = colEnd - colStart + 1;
+  m_transmitBuffer[0] = 0x40;
+
+  memcpy(&m_transmitBuffer[1], &m_buffer[page * SSD1306_WIDTH + colStart], width);
+
+  ESP_ERROR_CHECK(m_I2C.transaction(m_transmitBuffer, width + 1));
 }
 
 /**
@@ -129,13 +202,13 @@ void SSD1306::drawChar(uint8_t pixelPointer, uint8_t line, char c)
 
   uint16_t index = (c - FONT_START);
 
-  for (int i = 0; i < 5; i++)
+  for (int i = 0; i < CHARACTER_SIZE; i++)
   {
       m_buffer[line * SSD1306_WIDTH + pixelPointer + i] = font[index][i];
   }
 
   // space between letters
-  m_buffer[line * SSD1306_WIDTH + pixelPointer + 5] = 0x00;
+  m_buffer[line * SSD1306_WIDTH + pixelPointer + CHARACTER_SIZE] = 0x00;
 }
 
 
@@ -146,7 +219,7 @@ void SSD1306::drawChar(uint8_t pixelPointer, uint8_t line, char c)
  *        pointer to the string
  * @param uint8_t line
  *        line (page) in the display upon which the string will be drawn
- * @param TextAlign align
+ * @param textAlign align
  *        defaults to ALIGN_LEFT
  */
 void SSD1306::drawString(const char *str, uint8_t line, textAlign align)
@@ -154,7 +227,7 @@ void SSD1306::drawString(const char *str, uint8_t line, textAlign align)
   if (!str) return;
 
   uint16_t len = strlen(str);
-  uint16_t textWidth = len * 6; // 5px char + 1px space
+  uint16_t textWidth = len * (CHARACTER_SIZE + 1); // 5px char + 1px space
 
   uint8_t pixelPointer = 0;
 
@@ -181,14 +254,12 @@ void SSD1306::drawString(const char *str, uint8_t line, textAlign align)
   {
     drawChar(pixelPointer, line, *str++);
     // move pointer to next spot
-    pixelPointer += 6;
+    pixelPointer = pixelPointer + CHARACTER_SIZE + 1;
 
     // out of bounds for display
-    if(pixelPointer  + 5 >= SSD1306_WIDTH)
+    if(pixelPointer + CHARACTER_SIZE >= SSD1306_WIDTH)
       break;
   }
-
-  update();
 }
 
 /**
@@ -234,8 +305,6 @@ void SSD1306::drawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap)
       }
     }
   }
-
-  update();
 }
 
 /**
@@ -243,14 +312,14 @@ void SSD1306::drawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap)
  *
  * SSD1306 datasheet pg. 44
  *
- * @param ScrollDirection direction
+ * @param scrollDirection direction
  *        direction of the scroll
  * @param uint8_t startPage
  *        page from which the scrolling starts
  * @param uint8_t endPage
  *        page where the scrolling ends
  */
-void SSD1306::startScroll(scrollDirection direction, uint8_t startPage, uint8_t endPage)
+void SSD1306::startScrollHorizontal(scrollDirection direction, uint8_t startPage, uint8_t endPage)
 {
   uint8_t dir;
 
