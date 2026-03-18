@@ -2,9 +2,7 @@
 
 ESP32 project that gets weather data using the Open-Meteo API and displays it on an OLED display alongside the location, a small icon representing the weather, and current time.
 
-![image](docs/esp_weather.png)
-
-![image](docs/wroover.png)
+![image](docs/esp_oled.png)
 
 ## How it works
 
